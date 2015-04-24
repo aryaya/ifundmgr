@@ -35,13 +35,17 @@ type Request struct {
 	CsId   string    // 客服 ID
 	CsTime time.Time // 客服提交时间
 
-	Name     string  // 真实姓名
-	BankName string  // 银行名称
-	BankId   string  // 银行账号
-	Currence string  // 货币 USD,HKD,CNY,BTC等等
-	Amount   float64 // 金额
-	Fees     float64 // 费用  总金额 = Amount + Fees
-	Wallet   string  // 钱包地址
+	DepositorName     string  // 存款人真实姓名
+	DepositorWallet   string  // 存款人钱包地址
+	DepositorBankName string  // 存款人银行名称
+	DepositorBankId   string  // 存款人银行账号
+	RecipientName     string  // 收款人真实姓名
+	RecipientBankName string  // 收款人银行名称
+	RecipientBankId   string  // 收款人银行账号
+	Currence          string  // 货币 USD,HKD,CNY,BTC等等
+	Amount            float64 // 金额
+	Fees              float64 // 费用  总金额 = Amount + Fees
+	Ok                bool    // 是否处理
 }
 
 type DepositRequest Request
