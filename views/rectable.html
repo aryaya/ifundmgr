@@ -1,11 +1,38 @@
-<div class="container-fluid">
-  <div class="row-fluid">
-    <div class="span8">
-      <table class="table table-striped">
-      </table>
+<form action="search.action" method="post">
+  <div style="float:left;width:100%;margin-bottom:25px;">
+    <div class="input-prepend"><span class="add-on"><i class="icon-calendar"></i></span>
+      <input class="input-small tt" placeholder="起始时间" name="stime" id="stime" type="text" value="">
     </div>
-    <div class="span4">
-    <!-- 查询 删除 审批 -->
+    <div class="input-prepend"><span class="add-on"><i class="icon-calendar"></i></span>
+      <input class="input-small tt" placeholder="结束时间" name="etime" id="etime" type="text" value="2015-04-26">
     </div>
+    <button class="btn" type="submit">Search</button>
   </div>
-</div>      
+</form>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      {{range .TableHeaders}}
+      <th>{{.}}</th>
+      {{end}}
+    </tr>
+  </thead>
+  <tbody>
+    {{with $x := .Role}}
+    {{range .Requests}}
+    <tr>
+      <td>{{.Id}}</td>
+      <td>{{.FinId}}</td>
+      <td>{{.FinTime}}</td>
+      <td>{{.MasterId}}</td>
+      <td>{{.MasterTime}}</td>
+      <td>{{.TxHash}}</td>
+      <td>{{.Status}}</td>
+      <td>{{.R.Id}}</td>
+      <td>
+        <a href="verify/{{.Id}}">Verify</a></td>
+    </tr>
+    {{end}}
+    {{end}}
+  </tbody>
+</table>

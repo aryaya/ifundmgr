@@ -1,4 +1,4 @@
-<form role="form" action="/issuer" method="post">
+<form role="form" action="form.action" method="post">
   {{range .recipients}}
   <div class="input-group">
   	<input type="radio" class="form-control" name="{{.BankId}}"><h2>{{.Name}} {{.BankName}} {{.BankId}} {{range .Currencies}} {{.}} {{end}}</h2>
@@ -7,15 +7,15 @@
 
   <div class="input-group">
     <span class="input-group-addon" id="depositerName">存款人姓名</span>
-    <input type="text" class="form-control" aria-describedby="userName">
+    <input type="text" class="form-control" aria-describedby="depositerName">
   </div>
   <div class="input-group">
     <span class="input-group-addon" id="depositerBankName">存款人银行名称</span>
-    <input type="text" class="form-control" aria-describedby="userName">
+    <input type="text" class="form-control" aria-describedby="depositerBankName">
   </div>
   <div class="input-group">
     <span class="input-group-addon" id="depositerBankId">存款人银行账号</span>
-    <input type="text" class="form-control" aria-describedby="userName">
+    <input type="text" class="form-control" aria-describedby="depositerBankId">
   </div>
 
   {{if .isDeposit}}
@@ -36,7 +36,7 @@
   </div>
   <div class="input-group">
     <span class="input-group-addon" id="iccWallet">ICC钱包</span>
-    <input type="text" class="form-control" aria-describedby="userName">
+    <input type="text" class="form-control" aria-describedby="iccWallet">
   </div>
   <button type="submit" class="btn btn-default">Submit</button>
 </form>

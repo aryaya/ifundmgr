@@ -45,7 +45,7 @@ type Request struct {
 	Currence          string  // 货币 USD,HKD,CNY,BTC等等
 	Amount            float64 // 金额
 	Fees              float64 // 费用  总金额 = Amount + Fees
-	Ok                bool    // 是否处理
+	Status            int     // 状态
 }
 
 type DepositRequest Request
@@ -53,11 +53,11 @@ type WithdrawalRequest Request
 type IssueRequest Request
 type RedeemRequest Request
 
-// 记录状态
+// 状态
 const (
 	Commited = iota // 提交请求
 	FinOK           // 财务确认 OK
-	MasterOK        // 总监确认 OK	Id       int64     // 请求ID, 唯一标识
+	MasterOK        // 总监确认 OK
 
 	TimeoutClosed // 超时关闭 - 财务不确认, 总监不确认的情况下都将引发超时关闭
 	OKClosed      // OK 关闭
@@ -65,7 +65,7 @@ const (
 
 // 记录表, 存款和取款
 type Recoder struct {
-	Id         int64     // 请求ID, 唯一标识
+	Id         int64     // ID, 唯一标识
 	FinId      string    // 财务 ID
 	FinTime    time.Time // 财务确认时间
 	MasterId   string    // 总监 ID
