@@ -17,6 +17,7 @@ type SignInController struct {
 }
 
 func (c *SignInController) Get() {
+
 }
 
 type SignOutController struct {
