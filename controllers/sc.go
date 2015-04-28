@@ -30,7 +30,7 @@ type ScController struct {
 }
 
 func (c *ScController) Get() {
-	c.Layout = "sc.html"
+	c.Layout = "layout.html"
 	c.TplNames = "view.html"
 }
 
@@ -39,8 +39,8 @@ type ScIssueController struct {
 }
 
 func (c *ScIssueController) Get() {
-	c.Layout = "sc.html"
-	c.TplNames = "sc/issue.html"
+	c.Layout = "layout.html"
+	c.TplNames = "sc/form.html"
 }
 
 type ScDepositController struct {
@@ -48,6 +48,6 @@ type ScDepositController struct {
 }
 
 func (c *ScDepositController) Get() {
-	c.Layout = "sc.html"
-	c.TplNames = "sc/deposit.html"
+	c.Layout = "layout.html"
+	c.TplNames = "sc/form.html"
 }

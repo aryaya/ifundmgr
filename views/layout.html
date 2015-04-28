@@ -37,7 +37,20 @@
         <a class="navbar-brand" href="#">iCloudFund 管理平台</a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
+        {{if showLogin}}
+        <form class="navbar-form navbar-right" role="form" method="post">
+          <div class="form-group">
+            <input type="text" placeholder="Name" class="form-control">
+          </div>
+          <div class="form-group">
+            <input type="password" placeholder="Password" class="form-control">
+          </div>
+          <button type="submit" class="btn btn-success">Sign in</button>
+        </form>
+        {{else}}
         <ul class="nav navbar-nav">
+          <li>
+            <a href="home"></a>首页</li>
           <li>
             <a href="issue"></a>发行ICC</li>
           {{if ne .Role 0}}
@@ -49,16 +62,18 @@
           {{if ne .Role 0}}
           <li>
             <a href="withdrawal"></a>取款</li>
-          {{end}}
         </ul>
+        {{end}}
         <form class="navbar-form navbar-right" role="form" action="/signout" method="post">
           <button type="submit" class="btn btn-success">Sign out</button>
         </form>
+        {{end}}
       </div>
       <!--/.navbar-collapse -->
     </div>
   </nav>
   <div class="container">
+    {{.LayoutContent}}
     <hr>
     <footer>
       <p>&copy; iCloudFund 2015</p>

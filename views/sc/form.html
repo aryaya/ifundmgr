@@ -1,4 +1,4 @@
-<form role="form" action="form.action" method="post">
+<form role="form" action="add.action" method="post">
   {{range .recipients}}
   <div class="input-group">
   	<input type="radio" class="form-control" name="{{.BankId}}"><h2>{{.Name}} {{.BankName}} {{.BankId}} {{range .Currencies}} {{.}} {{end}}</h2>
