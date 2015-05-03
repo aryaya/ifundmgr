@@ -1,14 +1,31 @@
 <form action="search.action" method="post">
-  <div style="float:left;width:100%;margin-bottom:25px;">
-    <div class="input-prepend"><span class="add-on"><i class="icon-calendar"></i></span>
-      <input class="input-small tt" placeholder="起始时间" name="stime" id="stime" type="text" value="">
+  <div class="row">
+    <div class="col-md-4">
+      <div class="input-group input-prepend"><span class="add-on"><i class="icon-calendar"></i></span>
+        <input class="input-small tt" placeholder="起始时间" name="stime" id="stime" type="text" value="{{.StartDate}}">
+      </div>
     </div>
-    <div class="input-prepend"><span class="add-on"><i class="icon-calendar"></i></span>
-      <input class="input-small tt" placeholder="结束时间" name="etime" id="etime" type="text" value="2015-04-26">
+    <div class="col-md-4">
+      <div class="input-group input-prepend"><span class="add-on"><i class="icon-calendar"></i></span>
+        <input class="input-small tt" placeholder="结束时间" name="etime" id="etime" type="text" value="{{.EndDate}}">
+      </div>
     </div>
-    <button class="btn" type="submit">Search</button>
+    <div class="col-md-4">
+      <div class="input-group">
+        <span class="input-group-addon" id="status">状态</span>
+        <select name="status" class="form-control" aria-describedby="status">
+          <option>已提交</option>
+          <option>财务已审批</option>
+          <option>主管已审批</option>
+          <option>超时关闭</option>
+          <option>完成关闭</option>
+        </select>
+      </div>
+    </div>
   </div>
+  <button class="btn" type="submit">Search</button>
 </form>
+
 <table class="table table-striped">
   <thead>
     <tr>
@@ -20,23 +37,22 @@
   <tbody>
     {{range .Requests}}
     <tr>
-      <td>{{.Id}}</td>
-      <td>{{.CsId}}</td>
       <td>{{.CsTime}}</td>
       <td>{{.DepositorName}}</td>
       <td>{{.DepositorWallet}}</td>
       <td>{{.DepositorBankName}}</td>
       <td>{{.DepositorBankId}}</td>
-      <td>{{.RecipientName}}</td>
-      <td>{{.RecipientBankName}}</td>
+<!--       <td>{{.RecipientName}}</td>
+      <td>{{.RecipientBankName}}</td> -->
       <td>{{.RecipientBankId}}</td>
       <td>{{.Currence}}</td>
       <td>{{.Amount}}</td>
       <td>{{.Fees}}</td>
-      <td>{{.Status}}</td>
+      <td>{{.Rec.Status}}</td>
+      <td><a href="detailes?id={{.Rec.Id}}">详情</a></td>
       {{if .|showVerify}}
       <td>
-        <a href="verify/{{.Id}">Verify</a>
+        <a href="verify?id={{.Rec.Id}}">Verify</a>
       </td>
       {{end}}
     </tr>

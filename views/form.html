@@ -1,27 +1,27 @@
 <form role="form" action="add.action" method="post">
-  {{range .recipients}}
+  {{range .Recipients}}
   <div class="input-group">
   	<input type="radio" class="form-control" name="{{.BankId}}"><h2>{{.Name}} {{.BankName}} {{.BankId}} {{range .Currencies}} {{.}} {{end}}</h2>
   </div>
   {{end}}
 
   <div class="input-group">
-    <span class="input-group-addon" id="depositerName">存款人姓名</span>
-    <input type="text" class="form-control" aria-describedby="depositerName">
+    <span class="input-group-addon" id="depositorName">存款人姓名</span>
+    <input type="text" name="depositorName" class="form-control" aria-describedby="depositorName">
   </div>
   <div class="input-group">
-    <span class="input-group-addon" id="depositerBankName">存款人银行名称</span>
-    <input type="text" class="form-control" aria-describedby="depositerBankName">
+    <span class="input-group-addon" id="depositorBankName">存款人银行名称</span>
+    <input type="text" name="depositorBankName" class="form-control" aria-describedby="depositorBankName">
   </div>
   <div class="input-group">
-    <span class="input-group-addon" id="depositerBankId">存款人银行账号</span>
-    <input type="text" class="form-control" aria-describedby="depositerBankId">
+    <span class="input-group-addon" id="depositorBankId">存款人银行账号</span>
+    <input type="text" name="depositorBankId" class="form-control" aria-describedby="depositorBankId">
   </div>
 
-  {{if .isDeposit}}
+  {{if .IsDeposit}}
   <div class="input-group">
     <span class="input-group-addon" id="currence">币种</span>
-    <select name="" id="currency" class="form-control" aria-describedby="currence">
+    <select name="currency" class="form-control" aria-describedby="currence">
       <option>港元</option>
       <option>美元</option>
       <option>人民币</option>
@@ -35,8 +35,12 @@
     <input type="text" class="form-control" placeholder="" aria-describedby="amount">
   </div>
   <div class="input-group">
+    <span class="input-group-addon" id="fees">手续费</span>
+    <input type="text" name="fees" class="form-control" placeholder="" aria-describedby="fees">
+  </div>
+  <div class="input-group">
     <span class="input-group-addon" id="iccWallet">ICC钱包</span>
-    <input type="text" class="form-control" aria-describedby="iccWallet">
+    <input type="text" name="iccWallet" class="form-control" aria-describedby="iccWallet">
   </div>
   <button type="submit" class="btn btn-default">Submit</button>
 </form>
