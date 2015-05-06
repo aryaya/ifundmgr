@@ -238,14 +238,14 @@ func (c *MainController) getReqs(role *models.Role, tname string, status int, st
 	return hreqs
 }
 
-func (c *MainController) reqHtml(st, et *time.Time, reqs []HtmlReq) {
-	c.Data["StartDate"] = st.Format("2015-05-02")
-	c.Data["EndDate"] = et.Format("2015-05-02")
-	c.Data["Requests"] = reqs
-	c.Data["TableHeaders"] = tableHeaders
-	c.Layout = "layout.html"
-	c.TplNames = "reqtable.html"
-}
+// func (c *MainController) reqHtml(st, et *time.Time, reqs []HtmlReq) {
+// 	c.Data["StartDate"] = st.Format("2015-05-02")
+// 	c.Data["EndDate"] = et.Format("2015-05-02")
+// 	c.Data["Requests"] = reqs
+// 	c.Data["TableHeaders"] = tableHeaders
+// 	c.Layout = "layout.html"
+// 	c.TplNames = "reqtable.html"
+// }
 
 func (c *MainController) queryTable(tname string) {
 	r := c.getNoScRole()
@@ -266,10 +266,9 @@ func (c *MainController) queryTable(tname string) {
 	if !ok {
 		status = -1
 	}
-	reqs := c.getReqs(r, tname, status, &st, &et)
 	c.SetSession("StartDate", st)
 	c.SetSession("StartDate", et)
-	c.SetSession("Requests", reqs)
+	c.SetSession("Status", status)
 }
 
 func (c *MainController) getTable(tname string) {
@@ -288,10 +287,8 @@ func (c *MainController) getTable(tname string) {
 		tet := time.Now()
 		et = &tet
 	}
-	reqs, ok := c.GetSession("Requests").([]HtmlReq)
-	if !ok {
-		reqs = c.getReqs(r, tname, models.Commited, &st, &et)
-	}
+	status, ok := c.GetSession("Status").(int)
+	reqs := c.getReqs(r, tname, status, st, et)
 
 	c.Data["StartDate"] = st.Format("2015-05-02")
 	c.Data["EndDate"] = et.Format("2015-05-02")
@@ -405,18 +402,22 @@ func (c *MainController) verify(tname string) {
 
 func (c *MainController) VerifyIssue() {
 	c.verify("issue_rec")
+	c.Redirect("/issue", 302)
 }
 
 func (c *MainController) VerifyDeposit() {
-	c.verify("issue_rec")
+	c.verify("deposit_rec")
+	c.Redirect("/deposit", 302)
 }
 
 func (c *MainController) VerifyRedeem() {
-	c.verify("issue_rec")
+	c.verify("redeem_rec")
+	c.Redirect("/redeem", 302)
 }
 
 func (c *MainController) VerifyWithdrawal() {
-	c.verify("issue_rec")
+	c.verify("withdrawal_rec")
+	c.Redirect("/withdrawal", 302)
 }
 
 func (c *MainController) DetaileIssue() {
