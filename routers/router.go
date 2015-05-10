@@ -7,16 +7,16 @@ import (
 
 func init() {
 	beego.Router("/", &controllers.MainController{}, "get:Get")
-	beego.Router("/signin", &controllers.MainController{}, "get:SigninGet; post:SigninPost")
+	beego.Router("/signin", &controllers.MainController{}, "get:SigninGet;post:SigninPost")
 	beego.Router("/signout", &controllers.MainController{}, "get:SigninGet")
 
-	beego.Router("/issue", &controllers.MainController{}, "get:IssuesGet; post:IssuesPost")
-	beego.Router("/deposit", &controllers.MainController{}, "get:DepositsGet; post:DepositsPost")
-	beego.Router("/redeem", &controllers.MainController{}, "get:RedeemsGet; post:RedeemsPost")
-	beego.Router("/withdrawal", &controllers.MainController{}, "get:WithdrawalsGet; post:WithdrawalsPost")
+	beego.Router("/issue", &controllers.MainController{}, "get:IssuesGet;post:IssuesPost")
+	beego.Router("/deposit", &controllers.MainController{}, "get:DepositsGet;post:DepositsPost")
+	beego.Router("/redeem", &controllers.MainController{}, "get:RedeemsGet;post:RedeemsPost")
+	beego.Router("/withdrawal", &controllers.MainController{}, "get:WithdrawalsGet;post:WithdrawalsPost")
 
 	beego.Router("/issue/add", &controllers.MainController{}, "get:AddIssueGet;post:AddIssuePost")
-	beego.Router("/deposit/add", &controllers.MainController{}, "get:AddDepositGet; post:AddDepositPost")
+	beego.Router("/deposit/add", &controllers.MainController{}, "get:AddDepositGet;post:AddDepositPost")
 
 	beego.Router("/issue/verify", &controllers.MainController{}, "get:VerifyIssue")
 	beego.Router("/deposit/verify", &controllers.MainController{}, "get:VerifyDeposit")

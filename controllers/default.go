@@ -25,6 +25,18 @@ func init() {
 	beego.SessionOn = true
 	beego.SessionName = "icloudsessionid"
 	beego.InsertFilter("/*", beego.BeforeRouter, filterUser)
+
+	beego.AddFuncMap("showVerify", showVerify)
+	beego.AddFuncMap("fmtStatus", fmtStatus)
+}
+
+func fmtStatus(status int) string {
+	for k, v := range models.StatusMap {
+		if v == status {
+			return k
+		}
+	}
+	return "Unkown Status"
 }
 
 type MainController struct {
@@ -55,7 +67,7 @@ func (c *MainController) SigninPost() {
 		c.Redirect("/login", 302)
 		return
 	}
-	r := &models.Role{Id: uname}
+	r := &models.Role{Username: uname}
 	err := models.Gorm.Read(r)
 	if err != nil {
 		c.Redirect("/login", 302)
@@ -72,7 +84,7 @@ func (c *MainController) SigninPost() {
 
 func (c *MainController) getScRole() *models.Role {
 	r := c.GetSession("Role").(*models.Role)
-	if r.Type != models.RoleCs {
+	if r.Type != models.RoleC {
 		c.Redirect("/", 302)
 		return nil
 	}
@@ -82,7 +94,7 @@ func (c *MainController) getScRole() *models.Role {
 
 func (c *MainController) getNoScRole() *models.Role {
 	r := c.GetSession("Role").(*models.Role)
-	if r.Type == models.RoleCs {
+	if r.Type == models.RoleC {
 		c.Redirect("/", 302)
 		return nil
 	}
@@ -94,25 +106,18 @@ func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
 	c.Data["ShowSignin"] = false
 	c.Data["IsDeposit"] = isDeposit
 	c.Data["OK"] = ok
-	if isDeposit {
-		c.Data["Recipients"] = models.Gconf.DepositRecipients
-	} else {
-		c.Data["Recipients"] = models.Gconf.IssueRecipients
-	}
+	c.Data["Gbas"] = models.Gconf.GBAs
 	c.Layout = "layout.html"
 	c.TplNames = "form.html"
 }
 
 func (c *MainController) addReq(isDeposit bool, role *models.Role) error {
 	bankId := c.GetString("BankId")
-	recipients := models.Gconf.IssueRecipients
-	if isDeposit {
-		recipients = models.Gconf.DepositRecipients
-	}
-	var recipient models.Recipient
-	for _, r := range recipients {
-		if r.BankId == bankId {
-			recipient = r
+	gbas := models.Gconf.GBAs
+	var gba models.GateBankAccount
+	for _, g := range gbas {
+		if g.BankId == bankId {
+			gba = g
 			break
 		}
 	}
@@ -127,21 +132,21 @@ func (c *MainController) addReq(isDeposit bool, role *models.Role) error {
 	}
 
 	req := &models.Request{
-		CsId:              role.Id,
-		CsTime:            time.Now(),
-		DepositorName:     c.GetString("depositorName"),
-		DepositorWallet:   c.GetString("iccWallet"),
-		DepositorBankName: c.GetString("depositorBankName"),
-		DepositorBankId:   c.GetString("depositorBankId"),
-		RecipientName:     recipient.Name,
-		RecipientBankName: recipient.BankName,
-		RecipientBankId:   recipient.BankId,
-		Currence:          c.GetString("currency"),
-		Amount:            amount,
-		Fees:              fees,
+		CsId:      role.Username,
+		CsTime:    time.Now(),
+		CName:     c.GetString("depositorName"),
+		CWallet:   c.GetString("depositorWallet"),
+		CBankName: c.GetString("depositorBankName"),
+		CBankId:   c.GetString("depositorBankId"),
+		GName:     gba.Name,
+		GBankName: gba.BankName,
+		GBankId:   gba.BankId,
+		Currence:  c.GetString("currency"),
+		Amount:    amount,
+		Fees:      fees,
 	}
 	rec := &models.Recoder{
-		Status: models.Commited,
+		Status: models.COK,
 		R:      req,
 	}
 	req.R = rec
@@ -335,31 +340,22 @@ func (c *MainController) WithdrawalsPost() {
 }
 
 func canVerify(rtype, status int, tname string) int {
-	if rtype == models.RoleCs {
+	if rtype == models.RoleC {
 		return -1
 	}
-	if rtype == models.RoleFin {
-		if status == models.Commited {
-			if tname == "issue_req" || tname == "deposit_req" {
-				return models.FinOK
-			}
-		}
-		if status == models.MasterOK {
-			if tname == "redeem_req" || tname == "withdrawal_req" {
-				return models.FinOK
-			}
+	if rtype == models.RoleF {
+		if status == models.COK {
+			return models.FOK
 		}
 	}
-	if rtype == models.RoleMaster {
-		if status == models.Commited {
-			if tname == "redeem_req" || tname == "withdrawal_req" {
-				return models.MasterOK
-			}
+	if rtype == models.RoleM {
+		if status == models.FOK {
+			return models.MOK
 		}
-		if status == models.FinOK {
-			if tname == "issue_req" || tname == "deposit_req" {
-				return models.MasterOK
-			}
+	}
+	if rtype == models.RoleA {
+		if status == models.MOK {
+			return models.AOK
 		}
 	}
 	return -1

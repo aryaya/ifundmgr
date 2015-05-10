@@ -37,7 +37,7 @@
         <a class="navbar-brand" href="#">iCloudFund 管理平台</a>
       </div>
       <div id="navbar" class="navbar-collapse collapse">
-        {{if ShowSignin}}
+        {{if .ShowSignin}}
         <form class="navbar-form navbar-right" role="form" method="post">
           <div class="form-group">
             <input type="text" placeholder="Name" class="form-control">
@@ -53,7 +53,7 @@
             <a href="/">首页</a>
           </li>
           <li>
-            {{if qe .Role.Typ 0}}
+            {{if eq .Role.Typ 0}}
             <a href="issue/add">发行ICC</a> 
             {{else}}
             <a href="issue">发行ICC</a> 
@@ -65,7 +65,7 @@
           </li>
           {{end}}
           <li>
-            {{if qe .Role.Typ 0}}
+            {{if eq .Role.Typ 0}}
             <a href="deposit/add">存款</a> 
             {{else}}
             <a href="deposit">存款</a> 

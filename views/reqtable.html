@@ -1,3 +1,4 @@
+<!-- search form -->
 <form action="search.action" method="post">
   <div class="row">
     <div class="col-md-4">
@@ -17,6 +18,7 @@
           <option>已提交</option>
           <option>财务已审批</option>
           <option>主管已审批</option>
+          <option>转账已完成</option>
           <option>超时关闭</option>
           <option>完成关闭</option>
         </select>
@@ -25,8 +27,8 @@
   </div>
   <button class="btn" type="submit">Search</button>
 </form>
-
-<table class="table table-striped">
+<!-- requests table -->
+<table class="table table-striped table-bordered table-responsive">
   <thead>
     <tr>
       {{range .TableHeaders}}
@@ -38,23 +40,63 @@
     {{range .Requests}}
     <tr>
       <td>{{.CsTime}}</td>
-      <td>{{.DepositorName}}</td>
-      <td>{{.DepositorWallet}}</td>
-      <td>{{.DepositorBankName}}</td>
-      <td>{{.DepositorBankId}}</td>
-<!--       <td>{{.RecipientName}}</td>
+      <td>{{.CName}}</td>
+      <td>{{.CWallet}}</td>
+      <td>{{.CBankName}}</td>
+      <td>{{.CBankId}}</td>
+      <!--       <td>{{.RecipientName}}</td>
       <td>{{.RecipientBankName}}</td> -->
-      <td>{{.RecipientBankId}}</td>
+      <td>{{.GBankId}}</td>
       <td>{{.Currence}}</td>
       <td>{{.Amount}}</td>
       <td>{{.Fees}}</td>
       <td>{{.Rec.Status}}</td>
-      <td><a href="detailes?id={{.Rec.Id}}">详情</a></td>
       {{if .|showVerify}}
       <td>
         <a href="verify?id={{.Rec.Id}}">Verify</a>
       </td>
       {{end}}
+      <td>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#detail-modal">详情</button>
+      </td>
+      <!-- modal dialog -->
+      <div class="modal fade" id="detail-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title" id="myModalLabel">详细</h4>
+            </div>
+            <div class="modal-body">
+              <h3>客户姓名<small>{{.CName}}</small></h3>
+              <h3>客户银行<small>{{.CBankName}}</small></h3>
+              <h3>客户账号<small>{{.CBankAccount}}</small></h3>
+              <h3>客户钱包<small>{{.CWallet}}</small></h3>
+              
+              <h3>网关姓名<small>{{.GName}}</small></h3>
+              <h3>网关银行<small>{{.GBankName}}</small></h3>
+              <h3>网关账号<small>{{.GBankId}}</small></h3>
+
+              <h3>货币<small>{{.Currency}}</small></h3>
+              <h3>金额<small>{{.Amount}}</small></h3>
+              <h3>手续费<small>{{.Fees}}</small></h3>
+              <h3>客服ID<small>{{.CsId}}</small></h3>
+              <h3>客服提交时间<small>{{dateformat .CsTime}}</small></h3>
+              <h3>财务ID<small>{{.FId}}</small></h3>
+              <h3>财务审批时间<small>{{dateformat .FTime}}</small></h3>
+              <h3>总监ID<small>{{.MId}}</small></h3>
+              <h3>总监审批时间<small>{{dateformat .MTime}}</small></h3>
+              <h3>会计ID<small>{{.AId}}</small></h3>
+              <h3>会计完成时间<small>{{dateformat .ATime}}</small></h3>
+              <h3>状态<small>{{fmtStatus .Status}}</small></h3>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <input type="button" class="btn btn-primary" onclick="windows.location.hrel('verify?id={{.Rec.Id}}')">Verify</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </tr>
     {{end}}
   </tbody>
