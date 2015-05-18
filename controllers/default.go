@@ -1,21 +1,18 @@
 package controllers
 
 import (
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/context"
-	"github.com/astaxie/beego/orm"
-	"ifundmgr/models"
+	"crypto/md5"
+	"fmt"
+	"io"
 	"log"
 	"strconv"
 	"time"
-)
 
-var filterUser = func(ctx *context.Context) {
-	_, ok := ctx.Input.Session("uid").(string)
-	if !ok && ctx.Request.RequestURI != "/signin" {
-		ctx.Redirect(302, "/signin")
-	}
-}
+	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/context"
+
+	"ifundmgr/models"
+)
 
 func init() {
 	beego.SetStaticPath("/js", "static/js")
@@ -24,10 +21,23 @@ func init() {
 
 	beego.SessionOn = true
 	beego.SessionName = "icloudsessionid"
+	beego.InsertFilter("/", beego.BeforeRouter, filterUser)
 	beego.InsertFilter("/*", beego.BeforeRouter, filterUser)
 
 	beego.AddFuncMap("showVerify", showVerify)
 	beego.AddFuncMap("fmtStatus", fmtStatus)
+	beego.AddFuncMap("issue", issue)
+}
+
+var filterUser = func(ctx *context.Context) {
+	_, ok := ctx.Input.Session("Role").(*models.Role)
+	if !ok && ctx.Request.RequestURI != "/signin" {
+		ctx.Redirect(302, "/signin")
+	}
+}
+
+func issue(currency string) string {
+	return ""
 }
 
 func fmtStatus(status int) string {
@@ -44,6 +54,7 @@ type MainController struct {
 }
 
 func (c *MainController) Get() {
+	c.Data["Role"] = c.GetSession("Role").(*models.Role)
 	c.Layout = "layout.html"
 	c.TplNames = "info.html"
 }
@@ -52,33 +63,37 @@ func (c *MainController) SigninGet() {
 	c.Data["ShowSignin"] = true
 	c.Layout = "layout.html"
 	c.TplNames = "info.html"
-	c.Data["Token"] = "someToken"
+	h := md5.New()
+	io.WriteString(h, "wangch"+time.Now().String())
+	token := fmt.Sprintf("%x", h.Sum(nil))
+	c.Data["Token"] = token
+	c.SetSession("Token", token)
 }
 
-func (c *MainController) passHash(password string) string {
-	return password
+func (c *MainController) SignoutPost() {
+	c.Redirect("/signin", 302)
 }
 
 func (c *MainController) SigninPost() {
 	uname := c.GetString("Name")
 	upass := c.GetString("Password")
 	token := c.GetString("Token")
-	if token != c.Data["Token"] {
-		c.Redirect("/login", 302)
+	log.Println(token)
+	if token != c.GetSession("Token").(string) {
+		c.Redirect("/signin", 302)
 		return
 	}
 	r := &models.Role{Username: uname}
-	err := models.Gorm.Read(r)
+	err := models.Gorm.Read(r, "Username")
 	if err != nil {
-		c.Redirect("/login", 302)
+		c.Redirect("/signin", 302)
 		return
 	}
-	if r.PasswordHash != c.passHash(upass) {
-		c.Redirect("/login", 302)
+	if r.Password != models.PassHash(upass) {
+		c.Redirect("/signin", 302)
 		return
 	}
 	c.SetSession("Role", r)
-	c.Data["Role"] = r
 	c.Redirect("/", 302)
 }
 
@@ -103,6 +118,7 @@ func (c *MainController) getNoScRole() *models.Role {
 }
 
 func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
+	c.Data["Gbas"] = models.Gconf.GBAs
 	c.Data["ShowSignin"] = false
 	c.Data["IsDeposit"] = isDeposit
 	c.Data["OK"] = ok
@@ -111,8 +127,8 @@ func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
 	c.TplNames = "form.html"
 }
 
-func (c *MainController) addReq(isDeposit bool, role *models.Role) error {
-	bankId := c.GetString("BankId")
+func (c *MainController) addReq(isDeposit bool, role *models.Role, t int) error {
+	bankId := c.GetString("Gba")
 	gbas := models.Gconf.GBAs
 	var gba models.GateBankAccount
 	for _, g := range gbas {
@@ -134,24 +150,26 @@ func (c *MainController) addReq(isDeposit bool, role *models.Role) error {
 	req := &models.Request{
 		CsId:      role.Username,
 		CsTime:    time.Now(),
-		CName:     c.GetString("depositorName"),
-		CWallet:   c.GetString("depositorWallet"),
-		CBankName: c.GetString("depositorBankName"),
-		CBankId:   c.GetString("depositorBankId"),
+		CName:     c.GetString("name"),
+		CWallet:   c.GetString("iccWallet"),
+		CBankName: c.GetString("bankName"),
+		CBankId:   c.GetString("bankId"),
 		GName:     gba.Name,
 		GBankName: gba.BankName,
 		GBankId:   gba.BankId,
-		Currence:  c.GetString("currency"),
+		Currency:  c.GetString("currency"),
 		Amount:    amount,
 		Fees:      fees,
+		Type:      t,
 	}
 	rec := &models.Recoder{
 		Status: models.COK,
 		R:      req,
+		Type:   t,
 	}
 	req.R = rec
-	models.Gorm.Insert(req)
 	models.Gorm.Insert(rec)
+	models.Gorm.Insert(req)
 	return nil
 }
 
@@ -169,7 +187,7 @@ func (c *MainController) AddIssuePost() {
 	if r == nil {
 		return
 	}
-	err := c.addReq(false, r)
+	err := c.addReq(false, r, models.Issue)
 	if err != nil {
 		return
 	}
@@ -189,7 +207,7 @@ func (c *MainController) AddDepositPost() {
 	if r == nil {
 		return
 	}
-	err := c.addReq(true, r)
+	err := c.addReq(true, r, models.Deposit)
 	if err != nil {
 		return
 	}
@@ -199,84 +217,74 @@ func (c *MainController) AddDepositPost() {
 var tableHeaders = []string{
 	// "ID",
 	// "客服ID",
-	// "客服提交时间",
-	"存款人真实姓名",
-	"存款人钱包地址",
-	"存款人银行名称",
-	"存款人银行账号",
+	"时间",
+	"用户姓名",
+	"钱包地址",
+	"银行名称",
+	"银行账号",
 	// "收款人真实姓名",
 	// "收款人银行名称",
-	"收款人银行账号",
+	// "收款人银行账号",
 	"货币",
 	"金额",
 	"费用",
 	"状态",
-	"详情",
 	"审核",
+	"详情",
 }
 
 type HtmlReq struct {
 	*models.Request
-	Rec   *models.Recoder
-	Role  *models.Role
-	Tname string
+	Rec    *models.Recoder
+	Role   *models.Role
+	Status string
 }
 
-func (c *MainController) getReqs(role *models.Role, tname string, status int, st, et *time.Time) []HtmlReq {
-
+func (c *MainController) getReqs(role *models.Role, tname string, status int, st, et *time.Time, t int) []HtmlReq {
 	var reqs []*models.Request
-	qs := models.Gorm.QueryTable(tname).Filter("CsTime__gte", st).Filter("CsTime__lte", et)
+	log.Println("getReqs:", tname, status, st, et)
+	qs := models.Gorm.QueryTable(tname).Filter("Type", t).Filter("CsTime__gte", st).Filter("CsTime__lte", et).RelatedSel()
 	if status != -1 {
-		qs.Filter("Recoder__Status", status).All(reqs)
+		qs.Filter("R__Status", status).All(&reqs)
 	} else {
-		qs.All(reqs)
+		qs.All(&reqs)
 	}
 	hreqs := make([]HtmlReq, len(reqs))
 	for i, r := range reqs {
+		log.Println(r.R)
 		hreqs[i] = HtmlReq{
 			Request: r,
 			Rec:     r.R,
 			Role:    role,
-			Tname:   tname,
+			Status:  models.RStatusMap[r.R.Status],
 		}
 	}
 	return hreqs
 }
 
-// func (c *MainController) reqHtml(st, et *time.Time, reqs []HtmlReq) {
-// 	c.Data["StartDate"] = st.Format("2015-05-02")
-// 	c.Data["EndDate"] = et.Format("2015-05-02")
-// 	c.Data["Requests"] = reqs
-// 	c.Data["TableHeaders"] = tableHeaders
-// 	c.Layout = "layout.html"
-// 	c.TplNames = "reqtable.html"
-// }
-
-func (c *MainController) queryTable(tname string) {
+func (c *MainController) queryTable() {
 	r := c.getNoScRole()
 	if r == nil {
 		return
 	}
 	sst := c.GetString("stime")
 	set := c.GetString("etime")
-	st, err := time.Parse("2015-05-02", sst)
+
+	st, err := time.Parse("2006-01-02", sst)
 	if err != nil {
 		log.Fatal(err)
 	}
-	et, err := time.Parse("2015-05-02", set)
+	et, err := time.Parse("2006-01-02", set)
 	if err != nil {
 		log.Fatal(err)
 	}
-	status, ok := models.StatusMap[c.GetString("status")]
-	if !ok {
-		status = -1
-	}
-	c.SetSession("StartDate", st)
-	c.SetSession("StartDate", et)
-	c.SetSession("Status", status)
+	c.SetSession("StartDate", &st)
+	c.SetSession("EndDate", &et)
+	c.SetSession("Status", c.GetString("status"))
 }
 
-func (c *MainController) getTable(tname string) {
+func (c *MainController) getTable(t int) {
+	tname := "request"
 	r := c.getNoScRole()
 	if r == nil {
 		return
@@ -287,59 +295,65 @@ func (c *MainController) getTable(tname string) {
 		tst := time.Date(2015, 1, 1, 0, 0, 0, 0, time.Local)
 		st = &tst
 	}
-	et, ok := c.GetSession("EndTime").(*time.Time)
+	et, ok := c.GetSession("EndDate").(*time.Time)
 	if !ok {
 		tet := time.Now()
 		et = &tet
 	}
-	status, ok := c.GetSession("Status").(int)
-	reqs := c.getReqs(r, tname, status, st, et)
+	status := -1
+	ss, ok := c.GetSession("Status").(string)
+	if ok {
+		status = models.StatusMap[ss]
+	}
+	reqs := c.getReqs(r, tname, status, st, et, t)
 
-	c.Data["StartDate"] = st.Format("2015-05-02")
-	c.Data["EndDate"] = et.Format("2015-05-02")
+	c.Data["StartDate"] = st.Format("2006-01-02")
+	c.Data["EndDate"] = et.Format("2006-01-02")
 	c.Data["Requests"] = reqs
 	c.Data["TableHeaders"] = tableHeaders
+	c.Data["StatusSlice"] = models.StatusSlice
+	c.Data["Status"] = ss
 	c.Layout = "layout.html"
 	c.TplNames = "reqtable.html"
 }
 
 func (c *MainController) IssuesGet() {
-	c.getTable("issue_req")
+	c.getTable(models.Issue)
 }
 
 func (c *MainController) IssuesPost() {
-	c.queryTable("issue_req")
-	c.Redirect("/issue", 302)
+	c.queryTable()
+	c.Redirect("/issue/", 302)
 }
 
 func (c *MainController) DepositsGet() {
-	c.getTable("deposit_req")
+	c.getTable(models.Deposit)
 }
 
 func (c *MainController) DepositsPost() {
-	c.queryTable("deposit_req")
-	c.Redirect("/deposit", 302)
+	c.queryTable()
+	c.Redirect("/deposit/", 302)
 }
 
 func (c *MainController) RedeemsGet() {
-	c.getTable("redeem_req")
+	c.getTable(models.Redeem)
 }
 
 func (c *MainController) RedeemsPost() {
-	c.queryTable("redeem_req")
-	c.Redirect("/redeem", 302)
+	c.queryTable()
+	c.Redirect("/redeem/", 302)
 }
 
 func (c *MainController) WithdrawalsGet() {
-	c.getTable("withdrawal_req")
+	c.getTable(models.Withdrawal)
 }
 
 func (c *MainController) WithdrawalsPost() {
-	c.queryTable("withdrawal_req")
-	c.Redirect("/withdrawal", 302)
+	c.queryTable()
+	c.Redirect("/withdrawal/", 302)
 }
 
-func canVerify(rtype, status int, tname string) int {
+func canVerify(rtype, status int) int {
 	if rtype == models.RoleC {
 		return -1
 	}
@@ -362,10 +376,11 @@ func canVerify(rtype, status int, tname string) int {
 }
 
 func showVerify(hr *HtmlReq) bool {
-	return canVerify(hr.Role.Type, hr.Rec.Status, hr.Tname) != -1
+	return canVerify(hr.Role.Type, hr.Rec.Status) != -1
 }
 
-func (c *MainController) verify(tname string) {
+func (c *MainController) verify() {
+	// tname := "recoder"
 	r := c.getNoScRole()
 	if r == nil {
 		return
@@ -373,61 +388,71 @@ func (c *MainController) verify(tname string) {
 	sid := c.Ctx.Request.URL.Query().Get("id")
 	id, err := strconv.Atoi(sid)
 	if err != nil {
-		log.Fatal(err)
-	}
-	rec := &models.Recoder{}
-	qs := models.Gorm.QueryTable(tname).Filter("Id", id)
-	err = qs.One(rec)
-	if err != nil {
-		log.Fatal(err, id)
-	}
-	newStatus := canVerify(r.Type, rec.Status, tname)
-	if newStatus == -1 {
+		log.Println(err)
 		return
 	}
-	n, err := qs.Update(orm.Params{
-		"Status": newStatus,
-	})
+	rec := &models.Recoder{Id: int64(id)}
+	err = models.Gorm.Read(rec)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
-	if n != 1 {
-		log.Fatal("update error")
+	newStatus := canVerify(r.Type, rec.Status)
+	if newStatus == -1 {
+		log.Println("CAN'T verify")
+		return
 	}
+	if r.Type == models.RoleF {
+		rec.FId = r.Username
+		rec.FTime = time.Now()
+		rec.Status = models.FOK
+	} else if r.Type == models.RoleM {
+		rec.MId = r.Username
+		rec.MTime = time.Now()
+		rec.Status = models.MOK
+	} else if r.Type == models.RoleA {
+		rec.AId = r.Username
+		rec.ATime = time.Now()
+		rec.Status = models.AOK
+	} else {
+		log.Println("r.Type error", r.Type)
+		return
+	}
+	models.Gorm.Update(rec)
 }
 
 func (c *MainController) VerifyIssue() {
-	c.verify("issue_rec")
-	c.Redirect("/issue", 302)
+	c.verify()
+	c.Redirect("/issue/", 302)
 }
 
 func (c *MainController) VerifyDeposit() {
-	c.verify("deposit_rec")
-	c.Redirect("/deposit", 302)
+	c.verify()
+	c.Redirect("/deposit/", 302)
 }
 
 func (c *MainController) VerifyRedeem() {
-	c.verify("redeem_rec")
-	c.Redirect("/redeem", 302)
+	c.verify()
+	c.Redirect("/redeem/", 302)
 }
 
 func (c *MainController) VerifyWithdrawal() {
-	c.verify("withdrawal_rec")
-	c.Redirect("/withdrawal", 302)
+	c.verify()
+	c.Redirect("/withdrawal/", 302)
 }
 
-func (c *MainController) DetaileIssue() {
-	c.verify("issue_rec")
-}
+// func (c *MainController) DetaileIssue() {
+// 	c.verify()
+// }
 
-func (c *MainController) DetaileDeposit() {
-	c.verify("issue_rec")
-}
+// func (c *MainController) DetaileDeposit() {
+// 	c.verify()
+// }
 
-func (c *MainController) DetaileRedeem() {
-	c.verify("issue_rec")
-}
+// func (c *MainController) DetaileRedeem() {
+// 	c.verify()
+// }
 
-func (c *MainController) DetaileWithdrawal() {
-	c.verify("issue_rec")
-}
+// func (c *MainController) DetaileWithdrawal() {
+// 	c.verify()
+// }

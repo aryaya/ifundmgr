@@ -6,6 +6,5 @@ import (
 )
 
 func main() {
-	println("go here 0")
 	beego.Run()
 }

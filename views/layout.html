@@ -7,18 +7,34 @@
   <title></title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="css/bootstrap.min.css">
-  <link rel="stylesheet" href="css/bootstrap-datepicker3.min.css">
+  <!-- <link rel="apple-touch-icon" href="apple-touch-icon.png"> -->
+  <link rel="stylesheet" href="/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/bootstrap-datepicker3.min.css">
   <style>
   body {
     padding-top: 50px;
     padding-bottom: 20px;
   }
+  
+  #container0 {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  
+  .input-group {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  .table {
+    padding-top: 20px;
+  }
+  small {
+    text-align: right;
+    color: #1234;
+  }
   </style>
-  <link rel="stylesheet" href="css/bootstrap-theme.min.css">
-  <link rel="stylesheet" href="css/main.css">
-  <script src="js/vendor/modernizr-2.8.3.min.js"></script>
 </head>
 
 <body>
@@ -39,11 +55,12 @@
       <div id="navbar" class="navbar-collapse collapse">
         {{if .ShowSignin}}
         <form class="navbar-form navbar-right" role="form" method="post">
+          <input type="hidden" name="Token" value="{{.Token}}">
           <div class="form-group">
-            <input type="text" placeholder="Name" class="form-control">
+            <input type="text" placeholder="Name" name="Name" class="form-control">
           </div>
           <div class="form-group">
-            <input type="password" placeholder="Password" class="form-control">
+            <input type="password" placeholder="Password" name="Password" class="form-control">
           </div>
           <button type="submit" class="btn btn-success">Sign in</button>
         </form>
@@ -53,27 +70,23 @@
             <a href="/">首页</a>
           </li>
           <li>
-            {{if eq .Role.Typ 0}}
-            <a href="issue/add">发行ICC</a> 
-            {{else}}
-            <a href="issue">发行ICC</a> 
-            {{end}}
+            {{if eq .Role.Type 0}}
+            <a href="/issue/add">发行ICC</a> {{else}}
+            <a href="/issue/">发行ICC</a> {{end}}
           </li>
-          {{if ne .Role.Typ 0}}
+          {{if ne .Role.Type 0}}
           <li>
-            <a href="redeem">回收ICC</a>
+            <a href="/redeem/">回收ICC</a>
           </li>
           {{end}}
           <li>
-            {{if eq .Role.Typ 0}}
-            <a href="deposit/add">存款</a> 
-            {{else}}
-            <a href="deposit">存款</a> 
-            {{end}}
+            {{if eq .Role.Type 0}}
+            <a href="/deposit/add">存款</a> {{else}}
+            <a href="/deposit/">存款</a> {{end}}
           </li>
-          {{if ne .Role.Typ 0}}
+          {{if ne .Role.Type 0}}
           <li>
-            <a href="withdrawal">取款</a>
+            <a href="/withdrawal/">取款</a>
           </li>
           {{end}}
         </ul>
@@ -85,7 +98,7 @@
       <!--/.navbar-collapse -->
     </div>
   </nav>
-  <div class="container">
+  <div class="container" id="container0">
     {{.LayoutContent}}
     <hr>
     <footer>
@@ -93,11 +106,23 @@
     </footer>
   </div>
   <!-- /container -->
-  <script src="js/vendor/jquery-1.11.2.min.js"></script>
-  <script src="js/vendor/bootstrap.min.js"></script>
-  <script src="js/vendor/bootstrap-datepicker.min.js"></script>
-  <script src="js/plugins.js"></script>
-  <script src="js/main.js"></script>
+  <script src="/js/vendor/jquery-1.11.2.min.js"></script>
+  <script src="/js/vendor/bootstrap.min.js"></script>
+  <script src="/js/vendor/bootstrap-datepicker.min.js"></script>
+  <script src="/js/plugins.js"></script>
+  <script src="/js/main.js"></script>
+  <script type="text/javascript">
+  $('#date1').datepicker({
+    format: "yyyy-mm-dd",
+    language: "zh-CN",
+    autoclose: true
+  });
+  $('#date2').datepicker({
+    format: "yyyy-mm-dd",
+    language: "zh-CN",
+    autoclose: true
+  });
+  </script>
 </body>
 
 </html>
