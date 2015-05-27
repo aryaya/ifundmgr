@@ -48,16 +48,20 @@ package main
 
 // 财务人员可以根据存款内容查询记录
 
-// 数据库表 6个：
+// 数据库表 3个：
 // 1, 人员表
-// 2, 存款表
-// 3, 取款表
-// 4, ICC 发行表
-// 5, ICC 回收表
-// 6, log 日志表
+// 2, 请求表 ==> deposit withdrawal issue redemm
+// 3, 记录表 ==> deposit withdrawal issue redemm
+// 4, log 日志表
 
 // 存款取款以及ICC发行和回收需要指定利息，并计入记录
 
 // ===========
 
 // 数据库：mysql
+
+// ===========
+
+// 对账功能:
+// 网关账户(cold wallet)货币currency余额(负值) == 数据库中 currency 记录 sum(deposit) - sum(withdrawal) == 财务账户 currency货币余额
+// ICC 网关账户 ICC发行数量 == 数据库 ICC 记录 sum(issue) - sum(redemm) == 对应财务账户美元余额 * ICC/USD

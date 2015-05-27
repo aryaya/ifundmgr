@@ -127,7 +127,7 @@ func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
 	c.TplNames = "form.html"
 }
 
-func (c *MainController) addReq(isDeposit bool, role *models.Role, t int) error {
+func (c *MainController) addReq(role *models.Role, t int) error {
 	bankId := c.GetString("Gba")
 	gbas := models.Gconf.GBAs
 	var gba models.GateBankAccount
@@ -187,7 +187,7 @@ func (c *MainController) AddIssuePost() {
 	if r == nil {
 		return
 	}
-	err := c.addReq(false, r, models.Issue)
+	err := c.addReq(r, models.Issue)
 	if err != nil {
 		return
 	}
@@ -207,7 +207,7 @@ func (c *MainController) AddDepositPost() {
 	if r == nil {
 		return
 	}
-	err := c.addReq(true, r, models.Deposit)
+	err := c.addReq(r, models.Deposit)
 	if err != nil {
 		return
 	}
@@ -353,7 +353,7 @@ func (c *MainController) WithdrawalsPost() {
 	c.Redirect("/withdrawal/", 302)
 }
 
-func canVerify(rtype, status int) int {
+func canVerify(rtype, status, typ int) int {
 	if rtype == models.RoleC {
 		return -1
 	}
@@ -376,7 +376,7 @@ func canVerify(rtype, status int) int {
 }
 
 func showVerify(hr *HtmlReq) bool {
-	return canVerify(hr.Role.Type, hr.Rec.Status) != -1
+	return canVerify(hr.Role.Type, hr.Rec.Status, hr.Rec.Type) != -1
 }
 
 func (c *MainController) verify() {
@@ -397,7 +397,7 @@ func (c *MainController) verify() {
 		log.Println(err)
 		return
 	}
-	newStatus := canVerify(r.Type, rec.Status)
+	newStatus := canVerify(r.Type, rec.Status, rec.Type)
 	if newStatus == -1 {
 		log.Println("CAN'T verify")
 		return
@@ -419,6 +419,10 @@ func (c *MainController) verify() {
 		return
 	}
 	models.Gorm.Update(rec)
+}
+
+func deposit(req *models.Request) error {
+
 }
 
 func (c *MainController) VerifyIssue() {
