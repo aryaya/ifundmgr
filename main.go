@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/astaxie/beego"
 	_ "ifundmgr/routers"
+
+	"github.com/astaxie/beego"
 )
 
 func main() {

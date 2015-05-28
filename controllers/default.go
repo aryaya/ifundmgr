@@ -445,18 +445,20 @@ func (c *MainController) VerifyWithdrawal() {
 	c.Redirect("/withdrawal/", 302)
 }
 
-// func (c *MainController) DetaileIssue() {
-// 	c.verify()
-// }
+// 写入数据库发行记录时包含 InvoiceId, 当网关完成交易时调用此 API, 根据InvoiceId写入数据库此 TxHash
+// 这时此次发行正式完成
+func (c *MainController) IssueApi() {
 
-// func (c *MainController) DetaileDeposit() {
-// 	c.verify()
-// }
+}
 
-// func (c *MainController) DetaileRedeem() {
-// 	c.verify()
-// }
+// 同 IssueApi 接口, 发行变为存款
+func (c *MainController) DepositApi() {
+}
 
-// func (c *MainController) DetaileWithdrawal() {
-// 	c.verify()
-// }
+// 网关完成回收(用户向网关发送 ICC), 调用此 API 发送赎回请求, 数据库写入此请求和产生记录
+func (c *MainController) RedeemApi() {
+}
+
+// 同 RedeemApi 接口, 回收变为取款
+func (c *MainController) WithdrawalApi() {
+}

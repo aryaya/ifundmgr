@@ -4,11 +4,14 @@
 
 package main
 
-// icloudfund.com ==> 网关 发行法币 说明页面和链接
-// icloudcoin.com ==> 官网 发行ICC 说明页面和链接
+// icloudfund.com ==> 官网 + 网关
+// 官网 说明页面和链接: ICC/USD 锚定值  ICC 发行数量 法币发行数量 如果购买和赎回 ICC 如何存款和取款法币 各种说明帮助和链接
+// ripple.txt + federation API + quote API
+// 和Ripple 网关不同的是 : 网关接收用户发送的 ICC 时, 作为ICC赎回处理
 
-// ifundmgr.com ==> 网关管理平台 用于法币的发行 存款取款的申请，确认，审批，保存，查询等
-// icoinmgr.com ==> 官网管理平台 用于ICC的发行和回收 发行回收的申请，确认，审批，查询等
+// ifundmgr.com ==> 网关平台
+// 用于法币的发行 存款取款的申请，确认，审批，保存，查询等
+// 用于ICC的发行和回收 发行回收的申请，确认，审批，查询等
 
 // 存款申请审批机制：
 // 	a, 存款人通过客服指导存款
@@ -50,11 +53,11 @@ package main
 
 // 数据库表 3个：
 // 1, 人员表
-// 2, 请求表 ==> deposit withdrawal issue redemm
-// 3, 记录表 ==> deposit withdrawal issue redemm
+// 2, 请求表 ==> deposit withdrawal issue redeem
+// 3, 记录表 ==> deposit withdrawal issue redeem
 // 4, log 日志表
 
-// 存款取款以及ICC发行和回收需要指定利息，并计入记录
+// 存款取款以及ICC发行和回收需要指定手续费，并计入记录
 
 // ===========
 
@@ -64,4 +67,4 @@ package main
 
 // 对账功能:
 // 网关账户(cold wallet)货币currency余额(负值) == 数据库中 currency 记录 sum(deposit) - sum(withdrawal) == 财务账户 currency货币余额
-// ICC 网关账户 ICC发行数量 == 数据库 ICC 记录 sum(issue) - sum(redemm) == 对应财务账户美元余额 * ICC/USD
+// ICC 网关账户 ICC发行数量 == 数据库 ICC 记录 sum(issue) - sum(redeem) == 对应财务账户美元余额 * ICC/USD

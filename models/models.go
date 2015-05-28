@@ -111,8 +111,8 @@ var StatusMap = map[string]int{
 	"财务已审批": FOK,
 	"主管已审批": MOK,
 	"转账已完成": AOK,
-	"超时关闭":  TimeoutClosed,
-	"完成关闭":  OKClosed,
+	"超时关闭":  TOC,
+	"完成关闭":  OKC,
 }
 
 var RStatusMap = map[int]string{
@@ -127,17 +127,18 @@ var RStatusMap = map[int]string{
 
 // 记录表, 存款和取款
 type Recoder struct {
-	Id     int64     // ID, 唯一标识
-	FId    string    // 财务 ID
-	FTime  time.Time `orm:"auto_now_add;type(date)"` // 财务确认时间
-	MId    string    // 总监 ID
-	MTime  time.Time `orm:"auto_now_add;type(date)"` // 总监确认时间
-	AId    string    // 会计 ID
-	ATime  time.Time `orm:"auto_now_add;type(date)"` // 会计转账完成确认时间
-	TxHash string    // tx hash
-	Status int       // 记录当前状态
-	Type   int       // 类别 Issue | Redeem | Deposit | Withdrawal
-	R      *Request  `orm:"reverse(one)"`
+	Id        int64     // ID, 唯一标识
+	FId       string    // 财务 ID
+	FTime     time.Time `orm:"auto_now_add;type(date)"` // 财务确认时间
+	MId       string    // 总监 ID
+	MTime     time.Time `orm:"auto_now_add;type(date)"` // 总监确认时间
+	AId       string    // 会计 ID
+	ATime     time.Time `orm:"auto_now_add;type(date)"` // 会计转账完成确认时间
+	Status    int       // 记录当前状态
+	Type      int       // 类别 Issue | Redeem | Deposit | Withdrawal
+	InvoiceId string    // 标识此次支付
+	TxHash    string    // tx hash
+	R         *Request  `orm:"reverse(one)"`
 }
 
 // 操作类别
@@ -155,4 +156,9 @@ type Log struct {
 	OprateType  int       // 操作类别
 	OpratorTime time.Time // 操作时间
 	LogoutTime  time.Time // 登出时间
+}
+
+// 监控
+func monitor() {
+
 }
