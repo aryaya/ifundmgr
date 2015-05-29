@@ -6,11 +6,14 @@ package models
 
 import (
 	"encoding/base64"
-	"github.com/astaxie/beego/orm"
-	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/scrypt"
 	"log"
 	"time"
+
+	"github.com/astaxie/beego/orm"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/wangch/ripple/data"
+	"github.com/wangch/ripple/websockets"
+	"golang.org/x/crypto/scrypt"
 )
 
 var Gorm orm.Ormer
@@ -31,6 +34,7 @@ func init() {
 	orm.RunSyncdb("default", false, true)
 	Gorm = orm.NewOrm()
 	Gorm.Using("default")
+	initConf()
 	for _, r := range Gconf.Roles {
 		r.Password = PassHash(r.Password)
 		_, _, err := Gorm.ReadOrCreate(&r, "Username")
@@ -38,6 +42,7 @@ func init() {
 			panic(err)
 		}
 	}
+	go monitor(Gconf.ServerAddr, Gconf.GateWallet)
 }
 
 // 人员类别
@@ -90,9 +95,8 @@ const (
 	FOK        // 财务确认 OK
 	MOK        // 总监确认 OK
 	AOK        // 会计转账 OK
-
-	TimeoutClosed // 超时关闭 - 财务不确认, 总监不确认的情况下都将引发超时关闭
-	OKClosed      // OK 关闭
+	TOC        // 超时关闭 - 财务不确认, 总监不确认的情况下都将引发超时关闭
+	OKC        // OK 关闭
 )
 
 var StatusSlice = []string{
@@ -116,13 +120,13 @@ var StatusMap = map[string]int{
 }
 
 var RStatusMap = map[int]string{
-	-1:            "全部",
-	COK:           "已提交",
-	FOK:           "财务已审批",
-	MOK:           "主管已审批",
-	AOK:           "转账已完成",
-	TimeoutClosed: "超时关闭",
-	OKClosed:      "完成关闭",
+	-1:  "全部",
+	COK: "已提交",
+	FOK: "财务已审批",
+	MOK: "主管已审批",
+	AOK: "转账已完成",
+	TOC: "超时关闭",
+	OKC: "完成关闭",
 }
 
 // 记录表, 存款和取款
@@ -158,7 +162,32 @@ type Log struct {
 	LogoutTime  time.Time // 登出时间
 }
 
-// 监控
-func monitor() {
+// 监控网关账号的存款deposit和ICC发行issue (取款withdrawal和ICC赎回redeem在网关)
+func monitor(serverAddr, gateWallet string) error {
+	ws, err := websockets.NewRemote(serverAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = ws.Subscribe(false, false, false, false, []string{gateWallet})
+	for {
+		msg, ok := <-ws.Incoming
+		if !ok {
+			log.Fatal("ws.Incoming closed")
+		}
 
+		switch msg := msg.(type) {
+		case *websockets.TransactionStreamMsg:
+			if msg.Transaction.GetType() == "Payment" &&
+				msg.Transaction.GetBase().Account.String() == gateWallet { // gatewallet is sender
+				paymentTx := msg.Transaction.Transaction.(*data.Payment)
+				log.Println(paymentTx.InvoiceID)
+				log.Println(paymentTx.Hash)
+				r := &Recoder{InvoiceId: paymentTx.InvoiceID.String()}
+				Gorm.Read(r)
+				r.TxHash = paymentTx.Hash.String()
+				r.Status = OKC
+				Gorm.Update(r)
+			}
+		}
+	}
 }
