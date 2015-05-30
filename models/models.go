@@ -6,6 +6,7 @@ package models
 
 import (
 	"encoding/base64"
+	"fmt"
 	"log"
 	"time"
 
@@ -168,6 +169,7 @@ func monitor(serverAddr, gateWallet string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+	gws = ws
 	_, err = ws.Subscribe(false, false, false, false, []string{gateWallet})
 	for {
 		msg, ok := <-ws.Incoming
@@ -190,4 +192,32 @@ func monitor(serverAddr, gateWallet string) error {
 			}
 		}
 	}
+}
+
+var gws *websockets.Remote
+
+func Payment(recipient, currency, invoiceID string, amount float64) error {
+	srcAcc, err := data.NewAccountFromAddress(sender)
+	if err != nil {
+		return err
+	}
+	destAcc, err := data.NewAccountFromAddress(recipient)
+	if err != nil {
+		return err
+	}
+	sa := ""
+	if currency == "ICC" || currency == "" {
+		sa = fmt.Sprintf("%d/ICC", amount*10e6)
+	} else {
+		sa = fmt.Sprintf("%f/%s/%s", amount, currency, Gconf.ColdWallet)
+	}
+	am, err := data.NewAmount(sa)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pf, err := gws.RipplePathFind(srcAcc, destAcc, am, nil)
+	if err != nil {
+		return err
+	}
+
 }

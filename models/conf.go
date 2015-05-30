@@ -20,7 +20,8 @@ type GateBankAccount struct {
 type Config struct {
 	GBAs       []GateBankAccount // 收款人信息
 	Currencies []string          // 支持的货币种类
-	GateWallet string            // 网关钱包地址
+	ColdWallet string            // 网关钱包地址
+	HoltWallet string            // 网关钱包地址
 	ServerAddr string            // Server 地址
 	Timeout    int               // 超过Timeout小时请求没有审批, 则超时关闭
 	Roles      []Role            //
