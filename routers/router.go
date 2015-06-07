@@ -1,8 +1,10 @@
+// Copyright 2015 iCloudFund. All Rights Reserved.
+
 package routers
 
 import (
 	"github.com/astaxie/beego"
-	"ifundmgr/controllers"
+	"github.com/wangch/ifundmgr/controllers"
 )
 
 func init() {

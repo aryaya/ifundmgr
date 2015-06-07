@@ -1,6 +1,4 @@
-//
-//
-//
+// Copyright 2015 iCloudFund. All Rights Reserved.
 
 package models
 
@@ -17,11 +15,15 @@ type GateBankAccount struct {
 	Currencies []string // 支持的货币种类
 }
 
+type KeyPair struct {
+	Secret, AccountId string
+}
+
 type Config struct {
 	GBAs       []GateBankAccount // 收款人信息
 	Currencies []string          // 支持的货币种类
-	ColdWallet string            // 网关钱包地址
-	HoltWallet string            // 网关钱包地址
+	ColdWallet string            // 网关钱包地址 用于发行
+	HoltWallet []KeyPair         // 网关钱包地址 用于支付
 	ServerAddr string            // Server 地址
 	Timeout    int               // 超过Timeout小时请求没有审批, 则超时关闭
 	Roles      []Role            //

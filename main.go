@@ -1,7 +1,9 @@
+// Copyright 2015 iCloudFund. All Rights Reserved.
+
 package main
 
 import (
-	_ "ifundmgr/routers"
+	_ "github.com/wangch/ifundmgr/routers"
 
 	"github.com/astaxie/beego"
 )

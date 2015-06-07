@@ -1,20 +1,15 @@
-//
-//
-//
+// Copyright 2015 iCloudFund. All Rights Reserved.
 
 package models
 
 import (
 	"encoding/base64"
-	"fmt"
+	"golang.org/x/crypto/scrypt"
 	"log"
 	"time"
 
 	"github.com/astaxie/beego/orm"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/wangch/ripple/data"
-	"github.com/wangch/ripple/websockets"
-	"golang.org/x/crypto/scrypt"
 )
 
 var Gorm orm.Ormer
@@ -43,7 +38,11 @@ func init() {
 			panic(err)
 		}
 	}
-	go monitor(Gconf.ServerAddr, Gconf.GateWallet)
+	accs := make([]string, len(Gconf.HoltWallet))
+	for i, hw := range Gconf.HoltWallet {
+		accs[i] = hw.AccountId
+	}
+	go monitor(Gconf.ServerAddr, accs)
 }
 
 // 人员类别
@@ -161,63 +160,4 @@ type Log struct {
 	OprateType  int       // 操作类别
 	OpratorTime time.Time // 操作时间
 	LogoutTime  time.Time // 登出时间
-}
-
-// 监控网关账号的存款deposit和ICC发行issue (取款withdrawal和ICC赎回redeem在网关)
-func monitor(serverAddr, gateWallet string) error {
-	ws, err := websockets.NewRemote(serverAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	gws = ws
-	_, err = ws.Subscribe(false, false, false, false, []string{gateWallet})
-	for {
-		msg, ok := <-ws.Incoming
-		if !ok {
-			log.Fatal("ws.Incoming closed")
-		}
-
-		switch msg := msg.(type) {
-		case *websockets.TransactionStreamMsg:
-			if msg.Transaction.GetType() == "Payment" &&
-				msg.Transaction.GetBase().Account.String() == gateWallet { // gatewallet is sender
-				paymentTx := msg.Transaction.Transaction.(*data.Payment)
-				log.Println(paymentTx.InvoiceID)
-				log.Println(paymentTx.Hash)
-				r := &Recoder{InvoiceId: paymentTx.InvoiceID.String()}
-				Gorm.Read(r)
-				r.TxHash = paymentTx.Hash.String()
-				r.Status = OKC
-				Gorm.Update(r)
-			}
-		}
-	}
-}
-
-var gws *websockets.Remote
-
-func Payment(recipient, currency, invoiceID string, amount float64) error {
-	srcAcc, err := data.NewAccountFromAddress(sender)
-	if err != nil {
-		return err
-	}
-	destAcc, err := data.NewAccountFromAddress(recipient)
-	if err != nil {
-		return err
-	}
-	sa := ""
-	if currency == "ICC" || currency == "" {
-		sa = fmt.Sprintf("%d/ICC", amount*10e6)
-	} else {
-		sa = fmt.Sprintf("%f/%s/%s", amount, currency, Gconf.ColdWallet)
-	}
-	am, err := data.NewAmount(sa)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pf, err := gws.RipplePathFind(srcAcc, destAcc, am, nil)
-	if err != nil {
-		return err
-	}
-
 }
