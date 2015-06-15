@@ -57,13 +57,13 @@ type MainController struct {
 func (c *MainController) Get() {
 	c.Data["Role"] = c.GetSession("Role").(*models.Role)
 	c.Layout = "layout.html"
-	c.TplNames = "info.html"
+	c.TplNames = "index.html"
 }
 
 func (c *MainController) SigninGet() {
 	c.Data["ShowSignin"] = true
 	c.Layout = "layout.html"
-	c.TplNames = "info.html"
+	c.TplNames = "index.html"
 	h := md5.New()
 	io.WriteString(h, "wangch"+time.Now().String())
 	token := fmt.Sprintf("%x", h.Sum(nil))
