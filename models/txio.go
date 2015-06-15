@@ -23,14 +23,14 @@ func monitor(serverAddr string, wallets []string) error {
 		ws, err := websockets.NewRemote(serverAddr)
 		gws = ws
 		if err != nil {
-			log.Println(err)
+			log.Println("@@@ 0:", err)
 			time.Sleep(time.Second * 1)
 			continue
 		}
 
 		_, err = ws.Subscribe(false, false, false, false, wallets)
 		if err != nil {
-			log.Println(err)
+			log.Println("@@@ 1:", err)
 			time.Sleep(time.Second * 1)
 			continue
 		}
@@ -38,7 +38,7 @@ func monitor(serverAddr string, wallets []string) error {
 		for {
 			msg, ok := <-ws.Incoming
 			if !ok {
-				log.Println("ws.Incoming closed")
+				log.Println("@@@ 2:", "ws.Incoming closed")
 				break
 			}
 
@@ -48,22 +48,28 @@ func monitor(serverAddr string, wallets []string) error {
 				// and only watch payments
 				if msg.Transaction.GetType() == "Payment" {
 					paymentTx := msg.Transaction.Transaction.(*data.Payment)
-					// query the paymen tx InvoiceId in database and update tx hansh
-					r := &Recoder{InvoiceId: paymentTx.InvoiceID.String()}
-					err = Gorm.Read(r)
-					if err != nil {
-						// must have error in database
-						// must report the error msg on web
-						log.Println(err)
+					log.Println(paymentTx)
+					if paymentTx.InvoiceID == nil {
 						break
 					}
-					r.TxHash = paymentTx.Hash.String()
-					r.Status = OKC
-					_, err = Gorm.Update(r)
+					// query the paymen tx InvoiceId in database and update tx hansh
+					r := &Request{InvoiceId: paymentTx.InvoiceID.String()}
+					err = Gorm.Read(r)
 					if err != nil {
-						// must have error in database
+						// have error in database
 						// must report the error msg on web
-						log.Println(err)
+						log.Println("@@@ 3:", err)
+						break
+					}
+					r.R.TxHash = paymentTx.Hash.String()
+					if isOut(paymentTx.Account.String(), wallets) {
+						r.R.Status = OKC
+					}
+					_, err = Gorm.Update(r.R)
+					if err != nil {
+						// have error in database
+						// must report the error msg on web
+						log.Println("@@@ 4:", err)
 					}
 				}
 			}
@@ -71,8 +77,35 @@ func monitor(serverAddr string, wallets []string) error {
 	}
 }
 
+// acc是否向外支付
+func isOut(acc string, accs []string) bool {
+	for _, a := range accs {
+		if a == acc {
+			return true
+		}
+	}
+	return false
+}
+
+// for _, w := range Gconf.HoltWallet {
+// 	a, err := data.NewAccountFromAddress(w.AccountId)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	r, err := gws.AccountInfo(a)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	r.AccountData.ba
+// }
+
+// TODO: 获取Gconf中每个Hotwallet的每种货币的余额, 选择最多的那个作为sender
+func Payment(r *Request, secret, sender string) error {
+	return payment(secret, sender, r.UWallet, r.Currency, r.Amount)
+}
+
 // secret is sender's secret
-func Payment(secret, sender, recipient, currency string, amount float64) error {
+func payment(secret, sender, recipient, currency string, amount float64) error {
 	srcAcccount, err := data.NewAccountFromAddress(sender)
 	if err != nil {
 		return err
@@ -114,12 +147,12 @@ func Payment(secret, sender, recipient, currency string, amount float64) error {
 	} else {
 		sam = fmt.Sprintf("%f/%s/%s", amount, currency, Gconf.ColdWallet)
 	}
-	am, err := data.NewAmount(sam)
+	a, err := data.NewAmount(sam)
 	if err != nil {
 		return err
 	}
 
-	h, err := data.NewHash256(getInvoiceID(am.String()))
+	h, err := data.NewHash256(GetInvoiceID(a))
 	if err != nil {
 		return err
 	}
@@ -127,7 +160,7 @@ func Payment(secret, sender, recipient, currency string, amount float64) error {
 	ptx := &data.Payment{
 		TxBase:      tb,
 		Destination: *destAccount,
-		Amount:      *am,
+		Amount:      *a,
 		InvoiceID:   h,
 	}
 
@@ -157,8 +190,8 @@ func Payment(secret, sender, recipient, currency string, amount float64) error {
 	return nil
 }
 
-func getInvoiceID(s string) string {
-	hash := sha256.Sum256([]byte(s))
+func GetInvoiceID(a *data.Amount) string {
+	hash := sha256.Sum256(a.Bytes())
 	invoiceID := hex.EncodeToString(hash[:])
 	return invoiceID
 }

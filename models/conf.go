@@ -16,7 +16,12 @@ type GateBankAccount struct {
 }
 
 type KeyPair struct {
-	Secret, AccountId string
+	AccountId, Secret string
+}
+
+type Fees struct {
+	Min, Max float64 // 最低, 最高费率
+	Rate     float64 // 费率比率
 }
 
 type Config struct {
@@ -27,6 +32,7 @@ type Config struct {
 	ServerAddr string            // Server 地址
 	Timeout    int               // 超过Timeout小时请求没有审批, 则超时关闭
 	Roles      []Role            //
+	Fees       Fees
 }
 
 var configFile = "./conf.json"
@@ -44,6 +50,10 @@ func loadConf() (*Config, error) {
 	return &conf, nil
 }
 
+// m01 1qaz2wsx iLyHPoNvsdN7LFFvpy8GGkDJGV1xo3V5We
+// m02 1qaz2wsx iMxKojv7vNYyca7YdsVBSRKCmvGciHUNap
+// m03 1qaz2wsx iLwUZfEo8pB9VTxzDtjwJBBuiWuVpLxz9m
+
 var defaultConf = &Config{
 	GBAs: []GateBankAccount{
 		{
@@ -60,8 +70,10 @@ var defaultConf = &Config{
 		},
 	},
 	Currencies: []string{"USD", "CNY", "HKD", "EUR", "JPY"},
-	// Wallet:     []string{""},
-	Timeout: 24,
+	ColdWallet: "iN8sGowQCg1qptWcJG1WyTmymKX7y9cpmr", // ss1TCkz333t3t2J5eobcEMkMY3bXk // w01
+	HoltWallet: []KeyPair{{"iwsZ7gxHFzu2xbj8YMf4UvK1PrDEMuxGkf", "ss9qoFiFNkokVfgrb3YkKHido6a1q" /* w02*/}, {"ine3v1DStiLfncJiCEgyfFct1i9t6M7z9E", "snwh9xAzpVoh9WxRc3pVENBJV44fj" /*w003*/}},
+	ServerAddr: "wss://74.82.1.163:19528",
+	Timeout:    24,
 	Roles: []Role{
 		{
 			Username: "wangchC",
@@ -90,7 +102,7 @@ func initConf() {
 	conf, err := loadConf()
 	if err != nil {
 		conf = defaultConf
-		b, err := json.Marshal(conf)
+		b, err := json.MarshalIndent(conf, "", " ")
 		if err != nil {
 			panic(err)
 		}

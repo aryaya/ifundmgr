@@ -1,1 +1,79 @@
-{"GBAs":[{"Name":"王春晖","BankName":"中国工商银行武汉支行","BankId":"1234 5678 1379 2468","Currencies":["USD","CNY","HKD","EUR","JPY"]},{"Name":"马军","BankName":"香港汇丰银行","BankId":"1234 5678 1379 2468","Currencies":["USD","CNY","HKD","EUR","JPY"]}],"Currencies":["USD","CNY","HKD","EUR","JPY"],"Wallet":null,"Timeout":24,"Roles":[{"Id":0,"Username":"wangchC","Password":"passwordC","Type":0},{"Id":0,"Username":"wangchF","Password":"passwordF","Type":1},{"Id":0,"Username":"wangchM","Password":"passwordM","Type":2},{"Id":0,"Username":"wangchA","Password":"passwordA","Type":3}]}
+{
+ "GBAs": [
+  {
+   "Name": "王春晖",
+   "BankName": "中国工商银行武汉支行",
+   "BankId": "1234 5678 1379 2468",
+   "Currencies": [
+    "USD",
+    "CNY",
+    "HKD",
+    "EUR",
+    "JPY"
+   ]
+  },
+  {
+   "Name": "马军",
+   "BankName": "香港汇丰银行",
+   "BankId": "5555 5555 5555 5555",
+   "Currencies": [
+    "USD",
+    "CNY",
+    "HKD",
+    "EUR",
+    "JPY"
+   ]
+  }
+ ],
+ "Currencies": [
+  "USD",
+  "CNY",
+  "HKD",
+  "EUR",
+  "JPY"
+ ],
+ "ColdWallet": "iN8sGowQCg1qptWcJG1WyTmymKX7y9cpmr",
+ "HoltWallet": [
+  {
+   "AccountId": "iwsZ7gxHFzu2xbj8YMf4UvK1PrDEMuxGkf",
+   "Secret": "ss9qoFiFNkokVfgrb3YkKHido6a1q"
+  },
+  {
+   "AccountId": "ine3v1DStiLfncJiCEgyfFct1i9t6M7z9E",
+   "Secret": "snwh9xAzpVoh9WxRc3pVENBJV44fj"
+  }
+ ],
+ "ServerAddr": "wss://74.82.1.163:19528",
+ "Timeout": 24,
+ "Roles": [
+  {
+   "Id": 0,
+   "Username": "wangchC",
+   "Password": "passwordC",
+   "Type": 0
+  },
+  {
+   "Id": 0,
+   "Username": "wangchF",
+   "Password": "passwordF",
+   "Type": 1
+  },
+  {
+   "Id": 0,
+   "Username": "wangchM",
+   "Password": "passwordM",
+   "Type": 2
+  },
+  {
+   "Id": 0,
+   "Username": "wangchA",
+   "Password": "passwordA",
+   "Type": 3
+  }
+ ],
+ "Fees": {
+  "Min": 0,
+  "Max": 0,
+  "Rate": 0
+ }
+}

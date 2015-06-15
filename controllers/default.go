@@ -128,17 +128,43 @@ func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
 	c.TplNames = "form.html"
 }
 
-func (c *MainController) addReq(role *models.Role, t int) error {
-	bankId := c.GetString("Gba")
-	gbas := models.Gconf.GBAs
-	var gba models.GateBankAccount
-	for _, g := range gbas {
-		if g.BankId == bankId {
-			gba = g
-			break
-		}
-	}
+func AddReq(roleName, gid string, t int, u *models.User, currency string, amount, fees float64) error {
+	// gbas := models.Gconf.GBAs
+	// var gba models.GateBankAccount
+	// for _, g := range gbas {
+	// 	if g.BankId == gid {
+	// 		gba = g
+	// 		break
+	// 	}
+	// }
 
+	req := &models.Request{
+		CsId:      roleName,
+		CsTime:    time.Now(),
+		UName:     u.UName,
+		UWallet:   u.UWallet,
+		UBankName: u.UBankName,
+		UBankId:   u.UBankId,
+		UContact:  u.UContact,
+		// GName:     gba.Name,
+		// GBankName: gba.BankName,
+		// GBankId:   gba.BankId,
+		Currency: currency,
+		Amount:   amount,
+		Fees:     fees,
+		Type:     t,
+	}
+	rec := &models.Recoder{
+		Status: models.COK,
+		R:      req,
+	}
+	req.R = rec
+	models.Gorm.Insert(rec)
+	models.Gorm.Insert(req)
+	return nil
+}
+
+func (c *MainController) addReq(role *models.Role, t int) error {
 	amount, err := c.GetFloat("amount")
 	if err != nil {
 		return err
@@ -147,31 +173,15 @@ func (c *MainController) addReq(role *models.Role, t int) error {
 	if err != nil {
 		return err
 	}
+	u := &models.User{
+		UName:     c.GetString("name"),
+		UWallet:   c.GetString("icc_wallet"),
+		UBankName: c.GetString("bank_name"),
+		UBankId:   c.GetString("bank_id"),
+		UContact:  c.GetString("contact"),
+	}
 
-	req := &models.Request{
-		CsId:      role.Username,
-		CsTime:    time.Now(),
-		CName:     c.GetString("name"),
-		CWallet:   c.GetString("iccWallet"),
-		CBankName: c.GetString("bankName"),
-		CBankId:   c.GetString("bankId"),
-		GName:     gba.Name,
-		GBankName: gba.BankName,
-		GBankId:   gba.BankId,
-		Currency:  c.GetString("currency"),
-		Amount:    amount,
-		Fees:      fees,
-		Type:      t,
-	}
-	rec := &models.Recoder{
-		Status: models.COK,
-		R:      req,
-		Type:   t,
-	}
-	req.R = rec
-	models.Gorm.Insert(rec)
-	models.Gorm.Insert(req)
-	return nil
+	return AddReq(role.Username, c.GetString("Gba"), t, u, c.GetString("currency"), amount, fees)
 }
 
 func (c *MainController) AddIssueGet() {
@@ -377,7 +387,7 @@ func canVerify(rtype, status, typ int) int {
 }
 
 func showVerify(hr *HtmlReq) bool {
-	return canVerify(hr.Role.Type, hr.Rec.Status, hr.Rec.Type) != -1
+	return canVerify(hr.Role.Type, hr.Rec.Status, hr.Type) != -1
 }
 
 func (c *MainController) verify() {
@@ -398,7 +408,8 @@ func (c *MainController) verify() {
 		log.Println(err)
 		return
 	}
-	newStatus := canVerify(r.Type, rec.Status, rec.Type)
+	log.Println("@@@:", rec.R)
+	newStatus := canVerify(r.Type, rec.Status, 0 /*rec.R.Type*/)
 	if newStatus == -1 {
 		log.Println("CAN'T verify")
 		return

@@ -42,6 +42,7 @@ func init() {
 	for i, hw := range Gconf.HoltWallet {
 		accs[i] = hw.AccountId
 	}
+	accs = append(accs, Gconf.ColdWallet)
 	go monitor(Gconf.ServerAddr, accs)
 }
 
@@ -68,16 +69,25 @@ const (
 	Withdrawal
 )
 
+type User struct {
+	UName     string // 客户真实姓名
+	UWallet   string // 客户钱包地址
+	UBankName string // 客户银行名称
+	UBankId   string // 客户银行账号
+	UContact  string // 客户联系方式
+}
+
 // 请求表, 存款和取款
 type Request struct {
 	Id     int64     // 请求ID, 唯一标识
 	CsId   string    // 客服 ID
 	CsTime time.Time `orm:"auto_now_add;type(date)"` // 客服提交时间
 
-	CName     string   // 客户真实姓名
-	CWallet   string   // 客户钱包地址
-	CBankName string   // 客户银行名称
-	CBankId   string   // 客户银行账号
+	UName     string   // 客户真实姓名
+	UWallet   string   // 客户钱包地址
+	UBankName string   // 客户银行名称
+	UBankId   string   // 客户银行账号
+	UContact  string   // 客户联系方式
 	GName     string   // 网关真实姓名
 	GWallet   string   // 网关钱包地址
 	GBankName string   // 网关银行名称
@@ -86,6 +96,7 @@ type Request struct {
 	Amount    float64  // 金额
 	Fees      float64  // 费用 总金额 = Amount + Fees
 	Type      int      // 类别 Issue | Redeem | Deposit | Withdrawal
+	InvoiceId string   // 标识此次请求
 	R         *Recoder `orm:"rel(one)"`
 }
 
@@ -131,18 +142,17 @@ var RStatusMap = map[int]string{
 
 // 记录表, 存款和取款
 type Recoder struct {
-	Id        int64     // ID, 唯一标识
-	FId       string    // 财务 ID
-	FTime     time.Time `orm:"auto_now_add;type(date)"` // 财务确认时间
-	MId       string    // 总监 ID
-	MTime     time.Time `orm:"auto_now_add;type(date)"` // 总监确认时间
-	AId       string    // 会计 ID
-	ATime     time.Time `orm:"auto_now_add;type(date)"` // 会计转账完成确认时间
-	Status    int       // 记录当前状态
-	Type      int       // 类别 Issue | Redeem | Deposit | Withdrawal
-	InvoiceId string    // 标识此次支付
-	TxHash    string    // tx hash
-	R         *Request  `orm:"reverse(one)"`
+	Id     int64     // ID, 唯一标识
+	FId    string    // 财务 ID
+	FTime  time.Time `orm:"auto_now_add;type(date)"` // 财务确认时间
+	MId    string    // 总监 ID
+	MTime  time.Time `orm:"auto_now_add;type(date)"` // 总监确认时间
+	AId    string    // 会计 ID
+	ATime  time.Time `orm:"auto_now_add;type(date)"` // 会计转账完成确认时间
+	Status int       // 记录当前状态
+	// Type   int       // 类别 Issue | Redeem | Deposit | Withdrawal
+	TxHash string   // tx hash
+	R      *Request `orm:"reverse(one)"`
 }
 
 // 操作类别

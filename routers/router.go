@@ -25,8 +25,5 @@ func init() {
 	beego.Router("/redeem/verify?:id", &controllers.MainController{}, "post:VerifyIssue")
 	beego.Router("/withdrawal/verify?:id", &controllers.MainController{}, "post:VerifyDeposit")
 
-	beego.Router("/api/deposit", &controllers.MainController{}, "post:DepositApi")
-	beego.Router("/api/withdrawal", &controllers.MainController{}, "post:WithdrawalApi")
-	beego.Router("/api/issue", &controllers.MainController{}, "post:IssueApi")
-	beego.Router("/api/redeem", &controllers.MainController{}, "post:RedeemApi")
+	beego.Router("/api/quote", &controllers.MainController{}, "post:Quote")
 }

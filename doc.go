@@ -69,3 +69,9 @@ package main
 // 对账功能:
 // 网关账户(cold wallet)货币currency余额(负值) == 数据库中 currency 记录 sum(deposit) - sum(withdrawal) == 财务账户 currency货币余额
 // ICC 网关账户 ICC发行数量 == 数据库 ICC 记录 sum(issue) - sum(redeem) == 对应财务账户美元余额 * ICC/USD
+
+/*
+ip: 74.82.1.163 和 74.82.1.164
+username: CHWang
+password:  Wang366478
+*/
