@@ -35,15 +35,17 @@
  "ColdWallet": "iN8sGowQCg1qptWcJG1WyTmymKX7y9cpmr",
  "HoltWallet": [
   {
+   "Name": "w02",
    "AccountId": "iwsZ7gxHFzu2xbj8YMf4UvK1PrDEMuxGkf",
    "Secret": "ss9qoFiFNkokVfgrb3YkKHido6a1q"
   },
   {
+   "Name": "w03",
    "AccountId": "ine3v1DStiLfncJiCEgyfFct1i9t6M7z9E",
    "Secret": "snwh9xAzpVoh9WxRc3pVENBJV44fj"
   }
  ],
- "ServerAddr": "wss://74.82.1.163:19528",
+ "ServerAddr": "wss://local.icloud.com:19528",
  "Timeout": 24,
  "Roles": [
   {

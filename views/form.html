@@ -1,12 +1,5 @@
 <div class="row">
   <form role="form" class="col-md-offset-2 col-md-8" action="add.action" method="post">
-    {{range .Gbas}}
-    <div class="radio">
-      <label>
-        <input type="radio" name="Gba" id="optionsRadios1" value="{{.BankId}}" checked> {{.Name}} {{.BankName}} {{.BankId}} {{range .Currencies}} {{.}} {{end}}
-      </label>
-    </div>
-    {{end}}
     <div class="input-group">
       <span class="input-group-addon" id="name">姓名</span>
       <input type="text" name="name" class="form-control" aria-describedby="name">

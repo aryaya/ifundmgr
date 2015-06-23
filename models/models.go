@@ -23,7 +23,7 @@ func PassHash(password string) string {
 	return string(base64.StdEncoding.EncodeToString(key))
 }
 
-func init() {
+func Init() {
 	orm.RegisterDataBase("default", "sqlite3", "icloud.db")
 	orm.RegisterModel(new(Recoder), new(Request))
 	orm.RegisterModel(new(Role), new(Log))
@@ -88,10 +88,6 @@ type Request struct {
 	UBankName string   // 客户银行名称
 	UBankId   string   // 客户银行账号
 	UContact  string   // 客户联系方式
-	GName     string   // 网关真实姓名
-	GWallet   string   // 网关钱包地址
-	GBankName string   // 网关银行名称
-	GBankId   string   // 网关银行账号
 	Currency  string   // 货币 USD,HKD,CNY,BTC等等
 	Amount    float64  // 金额
 	Fees      float64  // 费用 总金额 = Amount + Fees
@@ -142,14 +138,18 @@ var RStatusMap = map[int]string{
 
 // 记录表, 存款和取款
 type Recoder struct {
-	Id     int64     // ID, 唯一标识
-	FId    string    // 财务 ID
-	FTime  time.Time `orm:"auto_now_add;type(date)"` // 财务确认时间
-	MId    string    // 总监 ID
-	MTime  time.Time `orm:"auto_now_add;type(date)"` // 总监确认时间
-	AId    string    // 会计 ID
-	ATime  time.Time `orm:"auto_now_add;type(date)"` // 会计转账完成确认时间
-	Status int       // 记录当前状态
+	Id    int64     // ID, 唯一标识
+	FId   string    // 财务 ID
+	FTime time.Time `orm:"type(datetime)"` // 财务确认时间
+	// GName     string    // 网关真实姓名
+	GWallet string // 网关钱包地址
+	// GBankName string    // 网关银行名称
+	GBankId string    // 网关银行账号
+	MId     string    // 总监 ID
+	MTime   time.Time `orm:"type(datetime)"` // 总监确认时间
+	AId     string    // 会计 ID
+	ATime   time.Time `orm:"type(datetime)"` // 会计转账完成确认时间
+	Status  int       // 记录当前状态
 	// Type   int       // 类别 Issue | Redeem | Deposit | Withdrawal
 	TxHash string   // tx hash
 	R      *Request `orm:"reverse(one)"`

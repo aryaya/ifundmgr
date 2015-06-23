@@ -101,18 +101,18 @@ func isOut(acc string, accs []string) bool {
 
 // TODO: 获取Gconf中每个Hotwallet的每种货币的余额, 选择最多的那个作为sender
 func Payment(r *Request, secret, sender string) error {
-	return payment(secret, sender, r.UWallet, r.Currency, r.Amount)
+	return payment(gws, secret, sender, Gconf.ColdWallet, r.UWallet, r.Currency, r.Amount)
 }
 
 // secret is sender's secret
-func payment(secret, sender, recipient, currency string, amount float64) error {
+func payment(ws *websockets.Remote, secret, sender, issuer, recipient, currency string, amount float64) error {
 	srcAcccount, err := data.NewAccountFromAddress(sender)
 	if err != nil {
-		return err
+		return errors.New("NewAccountFromAddress error: " + err.Error())
 	}
-	ar, err := gws.AccountInfo(*srcAcccount)
+	ar, err := ws.AccountInfo(*srcAcccount)
 	if err != nil {
-		return err
+		return errors.New("AccountInfo error: " + err.Error())
 	}
 	destAccount, err := data.NewAccountFromAddress(recipient)
 	if err != nil {
@@ -130,7 +130,7 @@ func payment(secret, sender, recipient, currency string, amount float64) error {
 
 	fee, err := data.NewNativeValue(int64(100))
 	if err != nil {
-		return err
+		return errors.New("NewNativeValue error: " + err.Error())
 	}
 
 	tb := data.TxBase{
@@ -143,18 +143,18 @@ func payment(secret, sender, recipient, currency string, amount float64) error {
 
 	sam := ""
 	if currency == "ICC" {
-		sam = fmt.Sprintf("%u/ICC", uint64(amount*1e6))
+		sam = fmt.Sprintf("%d/ICC", uint64(amount*1e6))
 	} else {
-		sam = fmt.Sprintf("%f/%s/%s", amount, currency, Gconf.ColdWallet)
+		sam = fmt.Sprintf("%f/%s/%s", amount, currency, issuer)
 	}
 	a, err := data.NewAmount(sam)
 	if err != nil {
-		return err
+		return errors.New("NewAmount error: " + sam + err.Error())
 	}
 
 	h, err := data.NewHash256(GetInvoiceID(a))
 	if err != nil {
-		return err
+		return errors.New("NewHash256 error: " + err.Error())
 	}
 
 	ptx := &data.Payment{
@@ -168,21 +168,24 @@ func payment(secret, sender, recipient, currency string, amount float64) error {
 	if err != nil {
 		return err
 	}
-	key, err := crypto.NewEd25519Key(seed.Payload())
-	if err != nil {
-		return err
-	}
-	// key, err := crypto.NewECDSAKey(seed)
+
+	// Ed25519 NOT surport because client use ECDSA
+	// key, err := crypto.NewEd25519Key(seed.Payload())
 	// if err != nil {
 	// 	return err
 	// }
 
-	keySeq := uint32(0)
-	err = data.Sign(ptx, key, &keySeq)
+	key, err := crypto.NewECDSAKey(seed.Payload())
 	if err != nil {
 		return err
 	}
-	r, err := gws.Submit(ptx)
+	var pseq uint32 = 0
+
+	err = data.Sign(ptx, key, &pseq)
+	if err != nil {
+		return err
+	}
+	r, err := ws.Submit(ptx)
 	if err != nil {
 		return err
 	}

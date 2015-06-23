@@ -7,7 +7,9 @@ import (
 	"github.com/wangch/ifundmgr/controllers"
 )
 
-func init() {
+func Init() {
+	controllers.Init()
+
 	beego.Router("/", &controllers.MainController{}, "get:Get")
 	beego.Router("/signin", &controllers.MainController{}, "get:SigninGet;post:SigninPost")
 	beego.Router("/signout", &controllers.MainController{}, "post:SignoutPost")
@@ -22,8 +24,18 @@ func init() {
 
 	beego.Router("/issue/verify?:id", &controllers.MainController{}, "post:VerifyIssue")
 	beego.Router("/deposit/verify?:id", &controllers.MainController{}, "post:VerifyDeposit")
-	beego.Router("/redeem/verify?:id", &controllers.MainController{}, "post:VerifyIssue")
-	beego.Router("/withdrawal/verify?:id", &controllers.MainController{}, "post:VerifyDeposit")
+	beego.Router("/redeem/verify?:id", &controllers.MainController{}, "post:VerifyRedeem")
+	beego.Router("/withdrawal/verify?:id", &controllers.MainController{}, "post:VerifyWithdrawal")
+
+	beego.Router("/issue/gbankid?:id", &controllers.MainController{}, "post:IssueUpdateGbank")
+	beego.Router("/deposit/gbankid?:id", &controllers.MainController{}, "post:DepositUpdateGbank")
+	beego.Router("/redeem/gbankid?:id", &controllers.MainController{}, "post:RedeemUpdateGbank")
+	beego.Router("/withdrawal/gbankid?:id", &controllers.MainController{}, "post:WithdrawalUpdateGbank")
+
+	beego.Router("/issue/hotwallet?:id", &controllers.MainController{}, "post:IssueUpdateHotwallet")
+	beego.Router("/deposit/hotwallet?:id", &controllers.MainController{}, "post:DepositUpdateHotwallet")
+	beego.Router("/redeem/hotwallet?:id", &controllers.MainController{}, "post:RedeemUpdateHotwallet")
+	beego.Router("/withdrawal/hotwallet?:id", &controllers.MainController{}, "post:WithdrawalUpdateHotwallet")
 
 	beego.Router("/api/quote", &controllers.MainController{}, "post:Quote")
 }

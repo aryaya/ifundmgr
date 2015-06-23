@@ -49,46 +49,6 @@ func quoteSucessResp(a *data.Amount) *QuoteResp {
 	}
 }
 
-// func quote(ctx *context.Context, conf *txtConf) {
-// 	typ := ctx.Request.URL.Query().Get("type")
-// 	if typ != "quote" {
-// 		resp := quoteErrorResp("the query type must be quote")
-// 		sendResp(resp, ctx)
-// 		return
-// 	}
-
-// 	domain := ctx.Request.URL.Query().Get("domain")
-// 	if domain != conf.domain {
-// 		resp := quoteErrorResp("the query domain must be " + conf.domain)
-// 		sendResp(resp, ctx)
-// 		return
-// 	}
-
-// 	destination := ctx.Request.URL.Query().Get("destination")
-// 	if destination == "" {
-// 		resp := quoteErrorResp("the query destination must be not null")
-// 		sendResp(resp, ctx)
-// 		return
-// 	}
-
-// 	amount := ctx.Request.URL.Query().Get("amount")
-// 	if amount == "" || len(strings.Split(amount, "/")) != 2 {
-// 		resp := quoteErrorResp("the query amount must be not null and must 1.0/CNY")
-// 		sendResp(resp, ctx)
-// 		return
-// 	}
-
-// 	source := ctx.Request.URL.Query().Get("source")
-// 	if source == "" {
-// 		resp := quoteErrorResp("the query amount must be not null")
-// 		sendResp(resp, ctx)
-// 		return
-// 	}
-
-// 	resp := quoteSucessResp(ctx, conf, destination, domain, amount, source)
-// 	sendResp(resp, ctx)
-// }
-
 func sendResp(resp interface{}, ctx *context.Context) error {
 	b, err := json.Marshal(resp)
 	if err != nil {

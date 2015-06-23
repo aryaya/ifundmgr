@@ -3,11 +3,12 @@
 package main
 
 import (
-	_ "github.com/wangch/ifundmgr/routers"
+	"github.com/wangch/ifundmgr/routers"
 
 	"github.com/astaxie/beego"
 )
 
 func main() {
+	routers.Init()
 	beego.Run()
 }

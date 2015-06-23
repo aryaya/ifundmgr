@@ -15,7 +15,9 @@ import (
 	"github.com/wangch/ifundmgr/models"
 )
 
-func init() {
+func Init() {
+	models.Init()
+
 	beego.SetStaticPath("/js", "static/js")
 	beego.SetStaticPath("/css", "static/css")
 	beego.SetStaticPath("/fonts", "static/fonts")
@@ -26,6 +28,10 @@ func init() {
 	beego.InsertFilter("/*", beego.BeforeRouter, filterUser)
 
 	beego.AddFuncMap("showVerify", showVerify)
+	beego.AddFuncMap("getGbas", getGbas)
+	beego.AddFuncMap("getHoltWallets", getHoltWallets)
+	beego.AddFuncMap("canModifyGBankId", canModifyGBankId)
+	beego.AddFuncMap("canModifyGWallet", canModifyGWallet)
 	beego.AddFuncMap("fmtStatus", fmtStatus)
 	beego.AddFuncMap("issue", issue)
 }
@@ -119,7 +125,6 @@ func (c *MainController) getNoScRole() *models.Role {
 }
 
 func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
-	c.Data["Gbas"] = models.Gconf.GBAs
 	c.Data["ShowSignin"] = false
 	c.Data["IsDeposit"] = isDeposit
 	c.Data["OK"] = ok
@@ -129,14 +134,14 @@ func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
 }
 
 func AddReq(roleName, gid string, t int, u *models.User, currency string, amount, fees float64) error {
-	// gbas := models.Gconf.GBAs
-	// var gba models.GateBankAccount
-	// for _, g := range gbas {
-	// 	if g.BankId == gid {
-	// 		gba = g
-	// 		break
-	// 	}
-	// }
+	gbas := models.Gconf.GBAs
+	var gba *models.GateBankAccount
+	for _, g := range gbas {
+		if g.BankId == gid {
+			gba = &g
+			break
+		}
+	}
 
 	req := &models.Request{
 		CsId:      roleName,
@@ -146,21 +151,40 @@ func AddReq(roleName, gid string, t int, u *models.User, currency string, amount
 		UBankName: u.UBankName,
 		UBankId:   u.UBankId,
 		UContact:  u.UContact,
-		// GName:     gba.Name,
-		// GBankName: gba.BankName,
-		// GBankId:   gba.BankId,
-		Currency: currency,
-		Amount:   amount,
-		Fees:     fees,
-		Type:     t,
+		Currency:  currency,
+		Amount:    amount,
+		Fees:      fees,
+		Type:      t,
 	}
+
+	if gba == nil && len(gbas) > 0 {
+		gba = &gbas[0]
+	}
+
+	tm := time.Unix(0, 0)
+
 	rec := &models.Recoder{
 		Status: models.COK,
 		R:      req,
+		FTime:  tm,
+		MTime:  tm,
+		ATime:  tm,
 	}
+	if gba != nil {
+		// req.GName = gba.Name
+		// req.GBankName = gba.BankName
+		rec.GBankId = gba.BankId
+	}
+	// log.Printf("%#v", rec)
 	req.R = rec
-	models.Gorm.Insert(rec)
-	models.Gorm.Insert(req)
+	_, err := models.Gorm.Insert(rec)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = models.Gorm.Insert(req)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return nil
 }
 
@@ -175,9 +199,9 @@ func (c *MainController) addReq(role *models.Role, t int) error {
 	}
 	u := &models.User{
 		UName:     c.GetString("name"),
-		UWallet:   c.GetString("icc_wallet"),
-		UBankName: c.GetString("bank_name"),
-		UBankId:   c.GetString("bank_id"),
+		UWallet:   c.GetString("iccWallet"),
+		UBankName: c.GetString("bankName"),
+		UBankId:   c.GetString("bankId"),
 		UContact:  c.GetString("contact"),
 	}
 
@@ -226,29 +250,27 @@ func (c *MainController) AddDepositPost() {
 }
 
 var tableHeaders = []string{
-	// "ID",
-	// "客服ID",
 	"时间",
 	"用户姓名",
-	"钱包地址",
-	"银行名称",
-	"银行账号",
-	// "收款人真实姓名",
-	// "收款人银行名称",
-	// "收款人银行账号",
+	"用户钱包",
+	"用户银行",
+	"用户银行账号",
 	"货币",
 	"金额",
 	"费用",
 	"状态",
-	"审核",
+	"网关银行账号",
+	"网关钱包",
 	"详情",
+	"审核",
 }
 
 type HtmlReq struct {
 	*models.Request
-	Rec    *models.Recoder
-	Role   *models.Role
-	Status string
+	Rec     *models.Recoder
+	Role    *models.Role
+	Status  string
+	GBankId string
 }
 
 func (c *MainController) getReqs(role *models.Role, tname string, status int, st, et *time.Time, t int) []HtmlReq {
@@ -324,6 +346,8 @@ func (c *MainController) getTable(t int) {
 	c.Data["TableHeaders"] = tableHeaders
 	c.Data["StatusSlice"] = models.StatusSlice
 	c.Data["Status"] = ss
+	c.Data["Gbas"] = models.Gconf.GBAs
+
 	c.Layout = "layout.html"
 	c.TplNames = "reqtable.html"
 }
@@ -386,6 +410,32 @@ func canVerify(rtype, status, typ int) int {
 	return -1
 }
 
+func canModifyGBankId(hr *HtmlReq) bool {
+	if hr.Role.Type == models.RoleF && hr.Rec.Status == models.COK {
+		return true
+	}
+	return false
+}
+
+func canModifyGWallet(hr *HtmlReq) bool {
+	if hr.Role.Type == models.RoleF && hr.Rec.Status == models.COK {
+		return true
+	}
+	return false
+}
+
+func getGbas() []models.GateBankAccount {
+	return models.Gconf.GBAs
+}
+
+func getHoltWallets() []string {
+	hws := make([]string, len(models.Gconf.HoltWallet))
+	for i, x := range models.Gconf.HoltWallet {
+		hws[i] = x.Name + ":" + x.AccountId
+	}
+	return hws
+}
+
 func showVerify(hr *HtmlReq) bool {
 	return canVerify(hr.Role.Type, hr.Rec.Status, hr.Type) != -1
 }
@@ -415,6 +465,9 @@ func (c *MainController) verify() {
 		return
 	}
 	if r.Type == models.RoleF {
+		if rec.GWallet == "" || rec.GBankId == "" {
+			return
+		}
 		rec.FId = r.Username
 		rec.FTime = time.Now()
 		rec.Status = models.FOK
@@ -454,5 +507,103 @@ func (c *MainController) VerifyRedeem() {
 
 func (c *MainController) VerifyWithdrawal() {
 	c.verify()
+	c.Redirect("/withdrawal/", 302)
+}
+
+func (c *MainController) updateGbank() {
+	r := c.getNoScRole()
+	if r == nil {
+		return
+	}
+	if r.Type != models.RoleF {
+		return
+	}
+	sid := c.Ctx.Request.URL.Query().Get("id")
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	rec := &models.Recoder{Id: int64(id)}
+	err = models.Gorm.Read(rec)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	gbankid := c.GetString("Gba")
+	log.Println("@@@@@@@@@@@@@: updateGbank", gbankid)
+	if rec.GBankId == gbankid {
+		return
+	}
+	rec.GBankId = gbankid
+	models.Gorm.Update(rec)
+}
+
+func (c *MainController) IssueUpdateGbank() {
+	c.updateGbank()
+	c.Redirect("/issue/", 302)
+}
+
+func (c *MainController) DepositUpdateGbank() {
+	c.updateGbank()
+	c.Redirect("/deposit/", 302)
+}
+
+func (c *MainController) RedeemUpdateGbank() {
+	c.updateGbank()
+	c.Redirect("/redeem/", 302)
+}
+
+func (c *MainController) WithdrawalUpdateGbank() {
+	c.updateGbank()
+	c.Redirect("/withdrawal/", 302)
+}
+
+func (c *MainController) updateHotwallet() {
+	r := c.getNoScRole()
+	if r == nil {
+		return
+	}
+	if r.Type != models.RoleF {
+		return
+	}
+	sid := c.Ctx.Request.URL.Query().Get("id")
+	id, err := strconv.Atoi(sid)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	rec := &models.Recoder{Id: int64(id)}
+	err = models.Gorm.Read(rec)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	hw := c.GetString("HotWallet")
+	log.Println("@@@@@@@@@@@@@@@@ updateHotwallet", hw)
+	if rec.GWallet == hw {
+		return
+	}
+	rec.GWallet = hw
+	models.Gorm.Update(rec)
+}
+
+func (c *MainController) IssueUpdateHotwallet() {
+	c.updateHotwallet()
+	c.Redirect("/issue/", 302)
+}
+
+func (c *MainController) DepositUpdateHotwallet() {
+	c.updateHotwallet()
+	c.Redirect("/deposit/", 302)
+}
+
+func (c *MainController) RedeemUpdateHotwallet() {
+	c.updateHotwallet()
+	c.Redirect("/redeem/", 302)
+}
+
+func (c *MainController) WithdrawalUpdateHotwallet() {
+	c.updateHotwallet()
 	c.Redirect("/withdrawal/", 302)
 }

@@ -41,15 +41,83 @@
   <tbody>
     {{range .Requests}}
     <tr>
-      <td>{{dateformat .CsTime "2006-01-02"}}</td>
-      <td>{{.CName}}</td>
-      <td>{{.CWallet}}</td>
-      <td>{{.CBankName}}</td>
-      <td>{{.GBankId}}</td>
+      <td>{{dateformat .CsTime "2006-01-02 03:04:05"}}</td>
+      <td>{{.UName}}</td>
+      <td>{{.UWallet}}</td>
+      <td>{{.UBankName}}</td>
+      <td>{{.UBankId}}</td>
       <td>{{.Currency}}</td>
       <td>{{.Amount}}</td>
       <td>{{.Fees}}</td>
       <td>{{.Status}}</td>
+      <td>
+        {{.Rec.GBankId}} {{if .|canModifyGBankId}}
+        <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modalb{{.Id}}">选择</button>
+        <!-- modal dialog -->
+        <div class="modal fade" id="modalb{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog ">
+            <div class="modal-content">
+              <form action="gbankid?id={{.Id}}" method="post">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  <h5 class="modal-title" id="myModalLabel">选择网关银行账号</h5>
+                </div>
+                <div class="modal-body">
+                  <div class="container">
+                    {{with $gbas := getGbas}} {{range $gbas}}
+                    <div class="row">
+                      <div class="radio">
+                        <label>
+                          <input type="radio" name="Gba" value="{{.BankId}}" checked> {{.Name}} {{.BankName}} {{.BankId}} {{range .Currencies}} {{.}} {{end}}
+                        </label>
+                      </div>
+                    </div>
+                    {{end}} {{end}}
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">确认</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {{end}}
+      </td>
+      <td>
+        {{.Rec.GWallet}} {{if .|canModifyGWallet}}
+        <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modalw{{.Id}}">选择</button>
+        <!-- modal dialog -->
+        <div class="modal fade" id="modalw{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog ">
+            <div class="modal-content">
+              <form action="hotwallet?id={{.Id}}" method="post">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  <h5 class="modal-title" id="myModalLabel">选择网关钱包</h5>
+                </div>
+                <div class="modal-body">
+                  <div class="container">
+                    {{with $hws := getHoltWallets}} {{range $hws}}
+                    <div class="row">
+                      <div class="radio">
+                        <label>
+                          <input type="radio" name="HotWallet" value="{{.}}" checked> {{.}}
+                        </label>
+                      </div>
+                    </div>
+                    {{end}} {{end}}
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">确认</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {{end}}
+      </td>
       <td>
         <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modal{{.Id}}">详情</button>
         <!-- modal dialog -->
@@ -58,66 +126,63 @@
             <div class="modal-content">
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">详细</h4>
+                <h5 class="modal-title" id="myModalLabel">详细</h5>
               </div>
               <div class="modal-body">
                 <div class="container">
                   <div class="row">
-                    <h4 class="col-md-6">{{.CName}}<small class="col-md-4">客户姓名:</small></h4> 
+                    <h5 class="col-md-6">{{.UName}}<small class="col-md-4">客户姓名:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.CBankName}}<small class="col-md-4">客户银行:</small></h4>
+                    <h5 class="col-md-6">{{.UBankName}}<small class="col-md-4">客户银行:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.CBankId}}<small class="col-md-4">客户账号:</small></h4>
+                    <h5 class="col-md-6">{{.UBankId}}<small class="col-md-4">客户账号:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.CWallet}}<small class="col-md-4">客户钱包:</small></h4>
+                    <h5 class="col-md-6">{{.UWallet}}<small class="col-md-4">客户钱包:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.GName}}<small class="col-md-4">网关姓名:</small></h4>
+                    <h5 class="col-md-6">{{.Rec.GBankId}}<small class="col-md-4">网关银行账号:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.GBankName}}<small class="col-md-4">网关银行:</small></h4>
+                    <h5 class="col-md-6">{{.Rec.GWallet}}<small class="col-md-4">网关钱包:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.GBankId}}<small class="col-md-4">网关账号:</small></h4>
+                    <h5 class="col-md-6">{{.Currency}}<small class="col-md-4">货币:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.Currency}}<small class="col-md-4">货币:</small></h4>
+                    <h5 class="col-md-6">{{.Amount}}<small class="col-md-4">金额:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.Amount}}<small class="col-md-4">金额:</small></h4>
+                    <h5 class="col-md-6">{{.Fees}}<small class="col-md-4">手续费:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.Fees}}<small class="col-md-4">手续费:</small></h4>
+                    <h5 class="col-md-6">{{.CsId}}<small class="col-md-4">客服ID:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.CsId}}<small class="col-md-4">客服ID:</small></h4>
+                    <h5 class="col-md-6">{{dateformat .CsTime "2006-01-02 03:04:04"}}<small class="col-md-4">客服提交时间:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{dateformat .CsTime "2006-01-02"}}<small class="col-md-4">客服提交时间:</small></h4>
+                    <h5 class="col-md-6">{{.R.FId}}<small class="col-md-4">财务ID:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.R.FId}}<small class="col-md-4">财务ID:</small></h4>
+                    <h5 class="col-md-6">{{dateformat .R.FTime "2006-01-02 03:04:04"}}<small class="col-md-4">财务审批时间:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{dateformat .R.FTime "2006-01-02"}}<small class="col-md-4">财务审批时间:</small></h4>
+                    <h5 class="col-md-6">{{.R.MId}}<small class="col-md-4">总监ID:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.R.MId}}<small class="col-md-4">总监ID:</small></h4>
+                    <h5 class="col-md-6">{{dateformat .R.MTime "2006-01-02 03:04:04"}}<small class="col-md-4">总监审批时间:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{dateformat .R.MTime "2006-01-02"}}<small class="col-md-4">总监审批时间:</small></h4>
+                    <h5 class="col-md-6">{{.R.AId}}<small class="col-md-4">会计ID:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{.R.AId}}<small class="col-md-4">会计ID:</small></h4>
+                    <h5 class="col-md-6">{{dateformat .R.ATime "2006-01-02 03:04:04"}}<small class="col-md-4">会计完成时间:</small></h5>
                   </div>
                   <div class="row">
-                    <h4 class="col-md-6">{{dateformat .R.ATime "2006-01-02"}}<small class="col-md-4">会计完成时间:</small></h4>
-                  </div>
-                  <div class="row">
-                    <h4 class="col-md-6">{{fmtStatus .R.Status}}<small class="col-md-4">状态:</small></h4>
+                    <h5 class="col-md-6">{{fmtStatus .R.Status}}<small class="col-md-4">状态:</small></h5>
                   </div>
                 </div>
               </div>

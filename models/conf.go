@@ -9,14 +9,14 @@ import (
 )
 
 type GateBankAccount struct {
-	Name       string
-	BankName   string
-	BankId     string
+	Name       string   // 开户人姓名
+	BankName   string   // 银行名字
+	BankId     string   // 银行账号
 	Currencies []string // 支持的货币种类
 }
 
-type KeyPair struct {
-	AccountId, Secret string
+type HortWallet struct {
+	Name, AccountId, Secret string
 }
 
 type Fees struct {
@@ -28,7 +28,7 @@ type Config struct {
 	GBAs       []GateBankAccount // 收款人信息
 	Currencies []string          // 支持的货币种类
 	ColdWallet string            // 网关钱包地址 用于发行
-	HoltWallet []KeyPair         // 网关钱包地址 用于支付
+	HoltWallet []HortWallet      // 网关钱包地址 用于支付
 	ServerAddr string            // Server 地址
 	Timeout    int               // 超过Timeout小时请求没有审批, 则超时关闭
 	Roles      []Role            //
@@ -71,8 +71,8 @@ var defaultConf = &Config{
 	},
 	Currencies: []string{"USD", "CNY", "HKD", "EUR", "JPY"},
 	ColdWallet: "iN8sGowQCg1qptWcJG1WyTmymKX7y9cpmr", // ss1TCkz333t3t2J5eobcEMkMY3bXk // w01
-	HoltWallet: []KeyPair{{"iwsZ7gxHFzu2xbj8YMf4UvK1PrDEMuxGkf", "ss9qoFiFNkokVfgrb3YkKHido6a1q" /* w02*/}, {"ine3v1DStiLfncJiCEgyfFct1i9t6M7z9E", "snwh9xAzpVoh9WxRc3pVENBJV44fj" /*w003*/}},
-	ServerAddr: "wss://74.82.1.163:19528",
+	HoltWallet: []HortWallet{{"w02", "iwsZ7gxHFzu2xbj8YMf4UvK1PrDEMuxGkf", "ss9qoFiFNkokVfgrb3YkKHido6a1q"}, {"w03", "ine3v1DStiLfncJiCEgyfFct1i9t6M7z9E", "snwh9xAzpVoh9WxRc3pVENBJV44fj"}},
+	ServerAddr: "wss://local.icloud.com:19528",
 	Timeout:    24,
 	Roles: []Role{
 		{
