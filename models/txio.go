@@ -100,7 +100,18 @@ func isOut(acc string, accs []string) bool {
 // }
 
 // TODO: 获取Gconf中每个Hotwallet的每种货币的余额, 选择最多的那个作为sender
-func Payment(r *Request, secret, sender string) error {
+func Payment(r *Request, sender string) error {
+	secret := ""
+	for _, x := range Gconf.HoltWallet {
+		if sender == x.Name+":"+x.AccountId {
+			secret = x.Secret
+			break
+		}
+	}
+	if secret == "" {
+		errMsg := fmt.Sprintf("Payment error: the Sender %s is NOT in config hotwallets", sender)
+		return errors.New(errMsg)
+	}
 	return payment(gws, secret, sender, Gconf.ColdWallet, r.UWallet, r.Currency, r.Amount)
 }
 

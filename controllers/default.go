@@ -440,8 +440,7 @@ func showVerify(hr *HtmlReq) bool {
 	return canVerify(hr.Role.Type, hr.Rec.Status, hr.Type) != -1
 }
 
-func (c *MainController) verify() {
-	// tname := "recoder"
+func (c *MainController) verify(isOut bool) {
 	r := c.getNoScRole()
 	if r == nil {
 		return
@@ -458,7 +457,6 @@ func (c *MainController) verify() {
 		log.Println(err)
 		return
 	}
-	log.Println("@@@:", rec.R)
 	newStatus := canVerify(r.Type, rec.Status, 0 /*rec.R.Type*/)
 	if newStatus == -1 {
 		log.Println("CAN'T verify")
@@ -479,6 +477,13 @@ func (c *MainController) verify() {
 		rec.AId = r.Username
 		rec.ATime = time.Now()
 		rec.Status = models.AOK
+		// 会计审批, 直接发送
+		if isOut {
+			err := models.Payment(rec.R, rec.GWallet)
+			if err != nil {
+				//
+			}
+		}
 	} else {
 		log.Println("r.Type error", r.Type)
 		return
@@ -531,7 +536,6 @@ func (c *MainController) updateGbank() {
 		return
 	}
 	gbankid := c.GetString("Gba")
-	log.Println("@@@@@@@@@@@@@: updateGbank", gbankid)
 	if rec.GBankId == gbankid {
 		return
 	}
@@ -580,7 +584,6 @@ func (c *MainController) updateHotwallet() {
 		return
 	}
 	hw := c.GetString("HotWallet")
-	log.Println("@@@@@@@@@@@@@@@@ updateHotwallet", hw)
 	if rec.GWallet == hw {
 		return
 	}
