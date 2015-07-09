@@ -3,8 +3,6 @@
 package models
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -18,6 +16,7 @@ import (
 var gws *websockets.Remote
 
 // 监控网关账号的存款deposit和ICC发行issue 取款withdrawal和ICC赎回redeem
+
 func monitor(serverAddr string, wallets []string) error {
 	for {
 		ws, err := websockets.NewRemote(serverAddr)
@@ -54,7 +53,7 @@ func monitor(serverAddr string, wallets []string) error {
 					}
 					// query the paymen tx InvoiceId in database and update tx hansh
 					r := &Request{InvoiceId: paymentTx.InvoiceID.String()}
-					err = Gorm.Read(r)
+					err = Gorm.Read(r, "invoice_id")
 					if err != nil {
 						// have error in database
 						// must report the error msg on web
@@ -103,7 +102,7 @@ func isOut(acc string, accs []string) bool {
 func Payment(r *Request, sender string) error {
 	secret := ""
 	for _, x := range Gconf.HoltWallet {
-		if sender == x.Name+":"+x.AccountId {
+		if sender == x.AccountId {
 			secret = x.Secret
 			break
 		}
@@ -112,11 +111,12 @@ func Payment(r *Request, sender string) error {
 		errMsg := fmt.Sprintf("Payment error: the Sender %s is NOT in config hotwallets", sender)
 		return errors.New(errMsg)
 	}
-	return payment(gws, secret, sender, Gconf.ColdWallet, r.UWallet, r.Currency, r.Amount)
+	return payment(gws, secret, sender, Gconf.ColdWallet, r.UWallet, r.Currency, r.InvoiceId, r.Amount)
 }
 
 // secret is sender's secret
-func payment(ws *websockets.Remote, secret, sender, issuer, recipient, currency string, amount float64) error {
+func payment(ws *websockets.Remote, secret, sender, issuer, recipient, currency, invoiceID string, amount float64) error {
+	log.Println("payment:", sender, secret, issuer, recipient, currency, amount)
 	srcAcccount, err := data.NewAccountFromAddress(sender)
 	if err != nil {
 		return errors.New("NewAccountFromAddress error: " + err.Error())
@@ -163,7 +163,7 @@ func payment(ws *websockets.Remote, secret, sender, issuer, recipient, currency 
 		return errors.New("NewAmount error: " + sam + err.Error())
 	}
 
-	h, err := data.NewHash256(GetInvoiceID(a))
+	h, err := data.NewHash256(invoiceID)
 	if err != nil {
 		return errors.New("NewHash256 error: " + err.Error())
 	}
@@ -202,10 +202,4 @@ func payment(ws *websockets.Remote, secret, sender, issuer, recipient, currency 
 	}
 	log.Println(r)
 	return nil
-}
-
-func GetInvoiceID(a *data.Amount) string {
-	hash := sha256.Sum256(a.Bytes())
-	invoiceID := hex.EncodeToString(hash[:])
-	return invoiceID
 }

@@ -4,15 +4,19 @@ package controllers
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 	"github.com/wangch/ifundmgr/models"
+	"github.com/wangch/ripple/data"
 )
 
 func Init() {
@@ -62,6 +66,7 @@ type MainController struct {
 
 func (c *MainController) Get() {
 	c.Data["Role"] = c.GetSession("Role").(*models.Role)
+	c.SetSession("ErrMsg", "")
 	c.Layout = "layout.html"
 	c.TplNames = "index.html"
 }
@@ -73,6 +78,7 @@ func (c *MainController) SigninGet() {
 	h := md5.New()
 	io.WriteString(h, "wangch"+time.Now().String())
 	token := fmt.Sprintf("%x", h.Sum(nil))
+	c.Data["ErrMsg"] = c.GetSession("ErrMsg")
 	c.Data["Token"] = token
 	c.SetSession("Token", token)
 }
@@ -90,13 +96,16 @@ func (c *MainController) SigninPost() {
 		c.Redirect("/signin", 302)
 		return
 	}
+	log.Println(uname)
 	r := &models.Role{Username: uname}
 	err := models.Gorm.Read(r, "Username")
 	if err != nil {
+		c.SetSession("ErrMsg", "name OR password error")
 		c.Redirect("/signin", 302)
 		return
 	}
 	if r.Password != models.PassHash(upass) {
+		c.SetSession("ErrMsg", "name OR password error")
 		c.Redirect("/signin", 302)
 		return
 	}
@@ -128,12 +137,33 @@ func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
 	c.Data["ShowSignin"] = false
 	c.Data["IsDeposit"] = isDeposit
 	c.Data["OK"] = ok
-	c.Data["Gbas"] = models.Gconf.GBAs
 	c.Layout = "layout.html"
 	c.TplNames = "form.html"
 }
 
-func AddReq(roleName, gid string, t int, u *models.User, currency string, amount, fees float64) error {
+const hextable = "0123456789ABCDEF"
+
+func b2h(h []byte) []byte {
+	b := make([]byte, len(h)*2)
+	for i, v := range h {
+		b[i*2] = hextable[v>>4]
+		b[i*2+1] = hextable[v&0x0f]
+	}
+	return b
+}
+
+func getInvoiceId(r *models.Request) string {
+	s := fmt.Sprintf("%s%s%s%s%s%s%s%s%f%f%d", r.CsId, r.CsTime.String(), r.UName, r.UWallet, r.UBankName, r.UBankId, r.UContact, r.Currency, r.Amount, r.Fees, r.Type)
+	hash := sha256.Sum256([]byte(s))
+	h, err := data.NewHash256(hash[:])
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return h.String()
+}
+
+func AddReq(roleName, gid string, t int, u *models.User, currency string, amount, fees float64) (*models.Request, error) {
 	gbas := models.Gconf.GBAs
 	var gba *models.GateBankAccount
 	for _, g := range gbas {
@@ -156,12 +186,13 @@ func AddReq(roleName, gid string, t int, u *models.User, currency string, amount
 		Fees:      fees,
 		Type:      t,
 	}
+	req.InvoiceId = getInvoiceId(req)
 
 	if gba == nil && len(gbas) > 0 {
 		gba = &gbas[0]
 	}
 
-	tm := time.Unix(0, 0)
+	tm := time.Date(1, 1, 1, 0, 0, 0, 0, time.Local)
 
 	rec := &models.Recoder{
 		Status: models.COK,
@@ -185,17 +216,17 @@ func AddReq(roleName, gid string, t int, u *models.User, currency string, amount
 	if err != nil {
 		log.Fatal(err)
 	}
-	return nil
+	return req, nil
 }
 
-func (c *MainController) addReq(role *models.Role, t int) error {
+func (c *MainController) addReq(role *models.Role, t int) (*models.Request, error) {
 	amount, err := c.GetFloat("amount")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fees, err := c.GetFloat("fees")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	u := &models.User{
 		UName:     c.GetString("name"),
@@ -204,13 +235,15 @@ func (c *MainController) addReq(role *models.Role, t int) error {
 		UBankId:   c.GetString("bankId"),
 		UContact:  c.GetString("contact"),
 	}
-
-	return AddReq(role.Username, c.GetString("Gba"), t, u, c.GetString("currency"), amount, fees)
+	s := c.GetString("currency")
+	currency := getCurrencyID(s)
+	return AddReq(role.Username, c.GetString("Gba"), t, u, currency, amount, fees)
 }
 
 func (c *MainController) AddIssueGet() {
 	r := c.getScRole()
 	if r == nil {
+		c.Data["ErrMsg"] = PDErr.Error()
 		return
 	}
 	c.Data["Role"] = r
@@ -222,8 +255,9 @@ func (c *MainController) AddIssuePost() {
 	if r == nil {
 		return
 	}
-	err := c.addReq(r, models.Issue)
+	_, err := c.addReq(r, models.Issue)
 	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
 		return
 	}
 	c.csHtml(false, true, r)
@@ -232,6 +266,7 @@ func (c *MainController) AddIssuePost() {
 func (c *MainController) AddDepositGet() {
 	r := c.getScRole()
 	if r == nil {
+		c.Data["ErrMsg"] = PDErr.Error()
 		return
 	}
 	c.csHtml(true, false, r)
@@ -240,10 +275,12 @@ func (c *MainController) AddDepositGet() {
 func (c *MainController) AddDepositPost() {
 	r := c.getScRole()
 	if r == nil {
+		c.Data["ErrMsg"] = PDErr.Error()
 		return
 	}
-	err := c.addReq(r, models.Deposit)
+	_, err := c.addReq(r, models.Deposit)
 	if err != nil {
+		c.Data["ErrMsg"] = PDErr.Error()
 		return
 	}
 	c.csHtml(true, true, r)
@@ -275,7 +312,6 @@ type HtmlReq struct {
 
 func (c *MainController) getReqs(role *models.Role, tname string, status int, st, et *time.Time, t int) []HtmlReq {
 	var reqs []*models.Request
-	log.Println("getReqs:", tname, status, st, et)
 	qs := models.Gorm.QueryTable(tname).Filter("Type", t).Filter("CsTime__gte", st).Filter("CsTime__lte", et).RelatedSel()
 	if status != -1 {
 		qs.Filter("R__Status", status).All(&reqs)
@@ -295,32 +331,35 @@ func (c *MainController) getReqs(role *models.Role, tname string, status int, st
 	return hreqs
 }
 
-func (c *MainController) queryTable() {
+var PDErr error = errors.New("Permission denied for the user")
+
+func (c *MainController) queryTable() error {
 	r := c.getNoScRole()
 	if r == nil {
-		return
+		return PDErr
 	}
 	sst := c.GetString("stime")
 	set := c.GetString("etime")
 
 	st, err := time.Parse("2006-01-02", sst)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	et, err := time.Parse("2006-01-02", set)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	c.SetSession("StartDate", &st)
 	c.SetSession("EndDate", &et)
 	c.SetSession("Status", c.GetString("status"))
+	return nil
 }
 
-func (c *MainController) getTable(t int) {
+func (c *MainController) getTable(t int) error {
 	tname := "request"
 	r := c.getNoScRole()
 	if r == nil {
-		return
+		return PDErr
 	}
 
 	st, ok := c.GetSession("StartDate").(*time.Time)
@@ -350,41 +389,78 @@ func (c *MainController) getTable(t int) {
 
 	c.Layout = "layout.html"
 	c.TplNames = "reqtable.html"
+	return nil
 }
 
 func (c *MainController) IssuesGet() {
-	c.getTable(models.Issue)
+	err := c.getTable(models.Issue)
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 }
 
 func (c *MainController) IssuesPost() {
-	c.queryTable()
+	err := c.queryTable()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
+
 	c.Redirect("/issue/", 302)
 }
 
 func (c *MainController) DepositsGet() {
-	c.getTable(models.Deposit)
+	err := c.getTable(models.Deposit)
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 }
 
 func (c *MainController) DepositsPost() {
-	c.queryTable()
+	err := c.queryTable()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
+
 	c.Redirect("/deposit/", 302)
 }
 
 func (c *MainController) RedeemsGet() {
-	c.getTable(models.Redeem)
+	err := c.getTable(models.Redeem)
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 }
 
 func (c *MainController) RedeemsPost() {
-	c.queryTable()
+	err := c.queryTable()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
+
 	c.Redirect("/redeem/", 302)
 }
 
 func (c *MainController) WithdrawalsGet() {
-	c.getTable(models.Withdrawal)
+	err := c.getTable(models.Withdrawal)
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 }
 
 func (c *MainController) WithdrawalsPost() {
-	c.queryTable()
+	err := c.queryTable()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
+
 	c.Redirect("/withdrawal/", 302)
 }
 
@@ -440,31 +516,32 @@ func showVerify(hr *HtmlReq) bool {
 	return canVerify(hr.Role.Type, hr.Rec.Status, hr.Type) != -1
 }
 
-func (c *MainController) verify(isOut bool) {
+func (c *MainController) verify(isOut bool) error {
 	r := c.getNoScRole()
 	if r == nil {
-		return
+		return PDErr
 	}
 	sid := c.Ctx.Request.URL.Query().Get("id")
 	id, err := strconv.Atoi(sid)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
-	rec := &models.Recoder{Id: int64(id)}
-	err = models.Gorm.Read(rec)
+	// rec := &models.Recoder{Id: int64(id)}
+	var req models.Request
+	err = models.Gorm.QueryTable("Request").Filter("R__id", id).RelatedSel().One(&req)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
+	rec := req.R
 	newStatus := canVerify(r.Type, rec.Status, 0 /*rec.R.Type*/)
 	if newStatus == -1 {
 		log.Println("CAN'T verify")
-		return
+		return PDErr
 	}
 	if r.Type == models.RoleF {
 		if rec.GWallet == "" || rec.GBankId == "" {
-			return
+			return errors.New("HotWallet OR GateBandId config error")
 		}
 		rec.FId = r.Username
 		rec.FTime = time.Now()
@@ -479,134 +556,206 @@ func (c *MainController) verify(isOut bool) {
 		rec.Status = models.AOK
 		// 会计审批, 直接发送
 		if isOut {
-			err := models.Payment(rec.R, rec.GWallet)
+			if rec.R == nil {
+				log.Fatal("rec.R == nil")
+				return PDErr
+			}
+			sender := ""
+			if strings.Contains(rec.GWallet, ":") {
+				sender = strings.Split(rec.GWallet, ":")[1]
+			}
+			if sender == "" {
+				log.Fatal("#########", "sender == nil")
+				return errors.New("HotWallet error")
+			}
+			rec.R.Currency = getCurrencyID(rec.R.Currency)
+			err := models.Payment(rec.R, sender)
 			if err != nil {
-				//
+				return err
 			}
 		}
 	} else {
 		log.Println("r.Type error", r.Type)
-		return
+		return PDErr
 	}
-	models.Gorm.Update(rec)
-}
-
-func deposit(req *models.Request) error {
-	return nil
+	_, err = models.Gorm.Update(rec)
+	return err
 }
 
 func (c *MainController) VerifyIssue() {
-	c.verify()
+	c.verify(true)
 	c.Redirect("/issue/", 302)
 }
 
 func (c *MainController) VerifyDeposit() {
-	c.verify()
+	err := c.verify(true)
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/deposit/", 302)
 }
 
 func (c *MainController) VerifyRedeem() {
-	c.verify()
+	err := c.verify(false)
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/redeem/", 302)
 }
 
 func (c *MainController) VerifyWithdrawal() {
-	c.verify()
+	err := c.verify(false)
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/withdrawal/", 302)
 }
 
-func (c *MainController) updateGbank() {
+func (c *MainController) updateGbank() error {
 	r := c.getNoScRole()
 	if r == nil {
-		return
+		return PDErr
 	}
 	if r.Type != models.RoleF {
-		return
+		return PDErr
 	}
 	sid := c.Ctx.Request.URL.Query().Get("id")
 	id, err := strconv.Atoi(sid)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 	rec := &models.Recoder{Id: int64(id)}
 	err = models.Gorm.Read(rec)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 	gbankid := c.GetString("Gba")
 	if rec.GBankId == gbankid {
-		return
+		return errors.New("GateBankID config error")
 	}
 	rec.GBankId = gbankid
-	models.Gorm.Update(rec)
+	_, err = models.Gorm.Update(rec)
+	return err
 }
 
 func (c *MainController) IssueUpdateGbank() {
-	c.updateGbank()
+	err := c.updateGbank()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/issue/", 302)
 }
 
 func (c *MainController) DepositUpdateGbank() {
-	c.updateGbank()
+	err := c.updateGbank()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/deposit/", 302)
 }
 
 func (c *MainController) RedeemUpdateGbank() {
-	c.updateGbank()
+	err := c.updateGbank()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/redeem/", 302)
 }
 
 func (c *MainController) WithdrawalUpdateGbank() {
-	c.updateGbank()
+	err := c.updateGbank()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/withdrawal/", 302)
 }
 
-func (c *MainController) updateHotwallet() {
+func (c *MainController) updateHotwallet() error {
 	r := c.getNoScRole()
 	if r == nil {
-		return
+		return PDErr
 	}
 	if r.Type != models.RoleF {
-		return
+		return PDErr
 	}
 	sid := c.Ctx.Request.URL.Query().Get("id")
 	id, err := strconv.Atoi(sid)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 	rec := &models.Recoder{Id: int64(id)}
 	err = models.Gorm.Read(rec)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 	hw := c.GetString("HotWallet")
 	if rec.GWallet == hw {
-		return
+		return errors.New("HotWallet config error")
 	}
 	rec.GWallet = hw
-	models.Gorm.Update(rec)
+	_, err = models.Gorm.Update(rec)
+	return err
 }
 
 func (c *MainController) IssueUpdateHotwallet() {
-	c.updateHotwallet()
+	err := c.updateHotwallet()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/issue/", 302)
 }
 
 func (c *MainController) DepositUpdateHotwallet() {
-	c.updateHotwallet()
+	err := c.updateHotwallet()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/deposit/", 302)
 }
 
 func (c *MainController) RedeemUpdateHotwallet() {
-	c.updateHotwallet()
+	err := c.updateHotwallet()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/redeem/", 302)
 }
 
 func (c *MainController) WithdrawalUpdateHotwallet() {
-	c.updateHotwallet()
+	err := c.updateHotwallet()
+	if err != nil {
+		c.Data["ErrMsg"] = err.Error()
+		return
+	}
 	c.Redirect("/withdrawal/", 302)
+}
+
+func getCurrencyID(s string) string {
+	switch s {
+	case "港元", "HKD":
+		return "HKD"
+	case "美元元", "USD":
+		return "USD"
+	case "日元", "JPY":
+		return "JPY"
+	case "欧元", "EUR":
+		return "EUR"
+	case "人民币", "CNY":
+		return "CNY"
+	}
+	return ""
 }

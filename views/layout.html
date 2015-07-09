@@ -62,7 +62,7 @@
           <div class="form-group">
             <input type="password" placeholder="Password" name="Password" class="form-control">
           </div>
-          <button type="submit" class="btn btn-success">Sign in</button>
+          <button tabindex="0" type="submit" class="btn btn-success" id="sigin_btn" role="button"  data-toggle="popover" data-trigger="focus" title="ErrMsg" data-content="{{.ErrMsg}}">Sign in</button>
         </form>
         {{else}}
         <ul class="nav navbar-nav">
@@ -122,6 +122,9 @@
     language: "zh-CN",
     autoclose: true
   });
+  {{if .ErrMsg}}
+  $('#sigin_btn').popover('show')
+  {{end}}
   </script>
 </body>
 

@@ -35,19 +35,19 @@ type Quote struct {
 	Send           []data.Amount `json:"send"`
 }
 
-func quoteSucessResp(a *data.Amount) *QuoteResp {
+// func quoteSucessResp(a *data.Amount) *QuoteResp {
 
-	quote := &Quote{
-		Address:        models.Gconf.ColdWallet,
-		DestinationTag: 2147483647,
-		Send:           []data.Amount{*a},
-		InvoiceID:      models.GetInvoiceID(a),
-	}
-	return &QuoteResp{
-		Result:    "success",
-		QuoteJson: quote,
-	}
-}
+// 	quote := &Quote{
+// 		Address:        models.Gconf.ColdWallet,
+// 		DestinationTag: 2147483647,
+// 		Send:           []data.Amount{*a},
+// 		InvoiceID:      models.GetInvoiceID(a),
+// 	}
+// 	return &QuoteResp{
+// 		Result:    "success",
+// 		QuoteJson: quote,
+// 	}
+// }
 
 func sendResp(resp interface{}, ctx *context.Context) error {
 	b, err := json.Marshal(resp)
@@ -102,7 +102,11 @@ func (c *MainController) Quote() {
 		UContact:  contact_info,
 	}
 
-	AddReq("", "", t, u, a.Currency.String(), am, fee)
+	req, err := AddReq("", "", t, u, a.Currency.String(), am, fee)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	fv, err := data.NewValue(fmt.Sprintf("%f", fee), a.IsNative())
 	if err != nil {
@@ -117,7 +121,7 @@ func (c *MainController) Quote() {
 		Address:        models.Gconf.ColdWallet,
 		DestinationTag: 2147483647,
 		Send:           []data.Amount{*a},
-		InvoiceID:      models.GetInvoiceID(a),
+		InvoiceID:      req.InvoiceId,
 	}
 	resp := &QuoteResp{
 		Result:    "success",
