@@ -68,6 +68,7 @@ func (c *MainController) Quote() {
 	full_name := c.Ctx.Request.URL.Query().Get("full_name")
 	// opening_branch := c.Ctx.Request.URL.Query().Get("opening_branch")
 	contact_info := c.Ctx.Request.URL.Query().Get("contact_info")
+	log.Println("Quote:", address, bank_name, card_number, full_name, contact_info)
 	a, err := data.NewAmount(sa)
 	if err != nil {
 		log.Println(err)
@@ -127,5 +128,6 @@ func (c *MainController) Quote() {
 		Result:    "success",
 		QuoteJson: quote,
 	}
+	log.Println("Quote:", address, full_name, "OK")
 	sendResp(resp, c.Ctx)
 }

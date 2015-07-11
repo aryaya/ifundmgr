@@ -75,3 +75,19 @@ ip: 74.82.1.163 和 74.82.1.164
 username: CHWang
 password:  Wang366478
 */
+
+// m01 1qaz2wsx iLyHPoNvsdN7LFFvpy8GGkDJGV1xo3V5We
+// m02 1qaz2wsx iMxKojv7vNYyca7YdsVBSRKCmvGciHUNap
+// m03 1qaz2wsx iLwUZfEo8pB9VTxzDtjwJBBuiWuVpLxz9m
+
+// 测试
+// 1, 存款港元 到 m01
+// 2, 取款港元
+// 3, 发行ICC
+// 4, 回收ICC
+
+// TODO
+// 1, 统计数据
+// 2, 修改密码
+// 3, 填写表单时, 金额和费率允许小数
+// 4, 界面优化
