@@ -50,32 +50,62 @@
  "Roles": [
   {
    "Id": 0,
-   "Username": "wangchC",
+   "Username": "cc",
    "Password": "passwordC",
    "Type": 0
   },
   {
    "Id": 0,
-   "Username": "wangchF",
+   "Username": "gc",
+   "Password": "passwordG",
+   "Type": 0
+  },
+  {
+   "Id": 0,
+   "Username": "ff",
    "Password": "passwordF",
    "Type": 1
   },
   {
    "Id": 0,
-   "Username": "wangchM",
+   "Username": "mm",
    "Password": "passwordM",
    "Type": 2
   },
   {
    "Id": 0,
-   "Username": "wangchA",
+   "Username": "aa",
    "Password": "passwordA",
    "Type": 3
   }
  ],
  "Fees": {
-  "Min": 0,
-  "Max": 0,
-  "Rate": 0
+  "FeeMap": {
+   "BTC": [
+    0.0005,
+    0.01
+   ],
+   "CNY": [
+    5,
+    50
+   ],
+   "EUR": [
+    1,
+    10
+   ],
+   "HKD": [
+    6,
+    60
+   ],
+   "ICC": [
+    1,
+    10
+   ],
+   "USD": [
+    1,
+    10
+   ]
+  },
+  "Rate": 0.01
  }
 }

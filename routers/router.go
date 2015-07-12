@@ -37,5 +37,5 @@ func Init() {
 	beego.Router("/redeem/hotwallet?:id", &controllers.MainController{}, "post:RedeemUpdateHotwallet")
 	beego.Router("/withdrawal/hotwallet?:id", &controllers.MainController{}, "post:WithdrawalUpdateHotwallet")
 
-	beego.Router("/api/quote", &controllers.MainController{}, "post:Quote")
+	beego.Router("/api/quote", &controllers.MainController{}, "get:Quote")
 }

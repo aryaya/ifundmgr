@@ -54,6 +54,7 @@ func sendResp(resp interface{}, ctx *context.Context) error {
 	if err != nil {
 		return err
 	}
+	log.Println(string(b))
 	ctx.ResponseWriter.Write(b)
 	return nil
 }
@@ -88,13 +89,24 @@ func (c *MainController) Quote() {
 		sendResp(resp, c.Ctx)
 		return
 	}
+	currency := a.Currency.String()
 	fee := am * models.Gconf.Fees.Rate
-	if fee < models.Gconf.Fees.Min {
-		fee = models.Gconf.Fees.Min
+	min := models.Gconf.Fees.FeeMap[currency][0]
+	max := models.Gconf.Fees.FeeMap[currency][1]
+	if fee < min {
+		fee = min
 	}
-	if fee > models.Gconf.Fees.Max {
-		fee = models.Gconf.Fees.Max
+	if fee > max {
+		fee = max
 	}
+	log.Println("@@@:", models.Gconf.ColdWallet)
+	acc, err := data.NewAccountFromAddress(models.Gconf.ColdWallet)
+	if err != nil {
+		log.Fatal(err)
+	}
+	a.Issuer = *acc
+	log.Println("###:", acc)
+
 	u := &models.User{
 		UName:     full_name,
 		UWallet:   address,

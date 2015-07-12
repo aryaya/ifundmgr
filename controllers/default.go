@@ -28,7 +28,7 @@ func Init() {
 
 	beego.SessionOn = true
 	beego.SessionName = "icloudsessionid"
-	beego.InsertFilter("/", beego.BeforeRouter, filterUser)
+	beego.InsertFilter("/*", beego.BeforeRouter, filterAddGateUser)
 	beego.InsertFilter("/*", beego.BeforeRouter, filterUser)
 
 	beego.AddFuncMap("showVerify", showVerify)
@@ -45,6 +45,11 @@ var filterUser = func(ctx *context.Context) {
 	if !ok && ctx.Request.RequestURI != "/signin" {
 		ctx.Redirect(302, "/signin")
 	}
+}
+
+var filterAddGateUser = func(ctx *context.Context) {
+	r := &models.Role{Username: "gc"}
+	ctx.Output.Session("Role", r)
 }
 
 func issue(currency string) string {

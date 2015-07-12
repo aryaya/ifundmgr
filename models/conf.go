@@ -20,8 +20,8 @@ type HortWallet struct {
 }
 
 type Fees struct {
-	Min, Max float64 // 最低, 最高费率
-	Rate     float64 // 费率比率
+	FeeMap map[string][2]float64 // 最低, 最高费率
+	Rate   float64               // 费率比率
 }
 
 type Config struct {
@@ -76,25 +76,41 @@ var defaultConf = &Config{
 	Timeout:    24,
 	Roles: []Role{
 		{
-			Username: "wangchC",
+			Username: "cc",
 			Password: "passwordC",
 			Type:     RoleC,
 		},
 		{
-			Username: "wangchF",
+			Username: "gc",
+			Password: "passwordG",
+			Type:     RoleC,
+		},
+		{
+			Username: "ff",
 			Password: "passwordF",
 			Type:     RoleF,
 		},
 		{
-			Username: "wangchM",
+			Username: "mm",
 			Password: "passwordM",
 			Type:     RoleM,
 		},
 		{
-			Username: "wangchA",
+			Username: "aa",
 			Password: "passwordA",
 			Type:     RoleA,
 		},
+	},
+	Fees: Fees{
+		FeeMap: map[string][2]float64{
+			"CNY": {5, 50},
+			"HKD": {6, 60},
+			"USD": {1, 10},
+			"EUR": {1, 10},
+			"ICC": {1, 10},
+			"BTC": {0.0005, 0.01},
+		},
+		Rate: 0.01,
 	},
 }
 
