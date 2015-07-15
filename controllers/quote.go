@@ -99,13 +99,11 @@ func (c *MainController) Quote() {
 	if fee > max {
 		fee = max
 	}
-	log.Println("@@@:", models.Gconf.ColdWallet)
 	acc, err := data.NewAccountFromAddress(models.Gconf.ColdWallet)
 	if err != nil {
 		log.Fatal(err)
 	}
 	a.Issuer = *acc
-	log.Println("###:", acc)
 
 	u := &models.User{
 		UName:     full_name,

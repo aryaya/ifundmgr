@@ -28,7 +28,6 @@ func Init() {
 
 	beego.SessionOn = true
 	beego.SessionName = "icloudsessionid"
-	beego.InsertFilter("/*", beego.BeforeRouter, filterAddGateUser)
 	beego.InsertFilter("/*", beego.BeforeRouter, filterUser)
 
 	beego.AddFuncMap("showVerify", showVerify)
@@ -41,6 +40,7 @@ func Init() {
 }
 
 var filterUser = func(ctx *context.Context) {
+	if 
 	_, ok := ctx.Input.Session("Role").(*models.Role)
 	if !ok && ctx.Request.RequestURI != "/signin" {
 		ctx.Redirect(302, "/signin")
@@ -48,8 +48,7 @@ var filterUser = func(ctx *context.Context) {
 }
 
 var filterAddGateUser = func(ctx *context.Context) {
-	r := &models.Role{Username: "gc"}
-	ctx.Output.Session("Role", r)
+
 }
 
 func issue(currency string) string {
@@ -70,7 +69,12 @@ type MainController struct {
 }
 
 func (c *MainController) Get() {
-	c.Data["Role"] = c.GetSession("Role").(*models.Role)
+	r, ok := c.GetSession("Role").(*models.Role)
+	if !ok {
+		c.Redirect("/signin", 302)
+		return
+	}
+	c.Data["Role"] = r
 	c.SetSession("ErrMsg", "")
 	c.Layout = "layout.html"
 	c.TplNames = "index.html"
@@ -97,7 +101,7 @@ func (c *MainController) SigninPost() {
 	upass := c.GetString("Password")
 	token := c.GetString("Token")
 	log.Println(token)
-	if token != c.GetSession("Token").(string) {
+	if t, ok := c.GetSession("Token").(string); !ok || token != t {
 		c.Redirect("/signin", 302)
 		return
 	}
@@ -178,6 +182,10 @@ func AddReq(roleName, gid string, t int, u *models.User, currency string, amount
 		}
 	}
 
+	if roleName == "" {
+		roleName = "gc"
+	}
+
 	req := &models.Request{
 		CsId:      roleName,
 		CsTime:    time.Now(),
@@ -197,14 +205,16 @@ func AddReq(roleName, gid string, t int, u *models.User, currency string, amount
 		gba = &gbas[0]
 	}
 
-	tm := time.Date(1, 1, 1, 0, 0, 0, 0, time.Local)
+	tm := time.Unix(0, 0) //time.Date(1979, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	rec := &models.Recoder{
-		Status: models.COK,
-		R:      req,
-		FTime:  tm,
-		MTime:  tm,
-		ATime:  tm,
+		R:     req,
+		FTime: tm,
+		MTime: tm,
+		ATime: tm,
+	}
+	if t == models.Deposit || t == models.Issue {
+		rec.Status = models.COK
 	}
 	if gba != nil {
 		// req.GName = gba.Name

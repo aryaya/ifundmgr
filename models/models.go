@@ -44,7 +44,7 @@ func Init() {
 		accs[i] = hw.AccountId
 	}
 	accs = append(accs, Gconf.ColdWallet)
-	go monitor(Gconf.ServerAddr, accs)
+	// go monitor(Gconf.ServerAddr, accs)
 }
 
 // 人员类别
@@ -99,12 +99,12 @@ type Request struct {
 
 // 状态
 const (
-	COK = iota // 提交请求 OK
-	FOK        // 财务确认 OK
-	MOK        // 总监确认 OK
-	AOK        // 会计转账 OK
-	TOC        // 超时关闭 - 财务不确认, 总监不确认的情况下都将引发超时关闭
-	OKC        // OK 关闭
+	COK = iota + 1 // 提交请求 OK
+	FOK            // 财务确认 OK
+	MOK            // 总监确认 OK
+	AOK            // 会计转账 OK
+	TOC            // 超时关闭 - 财务不确认, 总监不确认的情况下都将引发超时关闭
+	OKC            // OK 关闭
 )
 
 var StatusSlice = []string{

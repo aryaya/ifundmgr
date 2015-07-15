@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	// "github.com/wangch/ifundmgr/models"
 	"github.com/wangch/ripple/crypto"
 	"github.com/wangch/ripple/data"
 	"github.com/wangch/ripple/websockets"
@@ -52,18 +53,17 @@ func monitor(serverAddr string, wallets []string) error {
 						break
 					}
 					// query the paymen tx InvoiceId in database and update tx hansh
-					r := &Request{InvoiceId: paymentTx.InvoiceID.String()}
-					err = Gorm.Read(r, "invoice_id")
-					if err != nil {
-						// have error in database
-						// must report the error msg on web
-						log.Println("@@@ 3:", err)
-						break
-					}
+					invid := paymentTx.InvoiceID.String()
+					r := &Request{}
+					Gorm.QueryTable("request").Filter("invoice_id", invid).RelatedSel().One(r)
+
 					r.R.TxHash = paymentTx.Hash.String()
 					if isOut(paymentTx.Account.String(), wallets) {
 						r.R.Status = OKC
+					} else {
+						r.R.Status = COK
 					}
+					log.Println("@@@:", r.R)
 					_, err = Gorm.Update(r.R)
 					if err != nil {
 						// have error in database

@@ -20,10 +20,15 @@ type HortWallet struct {
 }
 
 type Fees struct {
-	FeeMap map[string][2]float64 // 最低, 最高费率
+	FeeMap map[string][2]float64 // 最低, 最高费率, 每笔转账小于最低按照最低计算, 高于最高按照最高计算
 	Rate   float64               // 费率比率
 }
 
+		}
+		err = ioutil.WriteFile(configFile, b, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
 type Config struct {
 	GBAs       []GateBankAccount // 收款人信息
 	Currencies []string          // 支持的货币种类
@@ -31,8 +36,9 @@ type Config struct {
 	HoltWallet []HortWallet      // 网关钱包地址 用于支付
 	ServerAddr string            // Server 地址
 	Timeout    int               // 超过Timeout小时请求没有审批, 则超时关闭
-	Roles      []Role            //
-	Fees       Fees
+	Roles      []Role            // 默认的用户
+	Fees       Fees              // 交易费
+	UsdRate    float64           // 当前 1 icc == ? usd 默认为1
 }
 
 var configFile = "./conf.json"
@@ -121,11 +127,6 @@ func initConf() {
 		b, err := json.MarshalIndent(conf, "", " ")
 		if err != nil {
 			panic(err)
-		}
-		err = ioutil.WriteFile(configFile, b, os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
 	}
 	Gconf = conf
 }
