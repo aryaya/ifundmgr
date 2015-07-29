@@ -3,12 +3,15 @@
 package main
 
 import (
-	"github.com/wangch/ifundmgr/routers"
+	"flag"
 
 	"github.com/astaxie/beego"
+	"github.com/wangch/ifundmgr/routers"
 )
 
 func main() {
+	flag.Parse()
+
 	routers.Init()
 	beego.Run()
 }

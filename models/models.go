@@ -3,13 +3,17 @@
 package models
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
-	"golang.org/x/crypto/scrypt"
-	"log"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/astaxie/beego/orm"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/wangch/glog"
+	"github.com/wangch/ripple/data"
+	"golang.org/x/crypto/scrypt"
 )
 
 var Gorm orm.Ormer
@@ -17,14 +21,13 @@ var Gorm orm.Ormer
 func PassHash(password string) string {
 	key, err := scrypt.Key([]byte(password), []byte("wangch"), 16384, 8, 1, 32)
 	if err != nil {
-		log.Println(err)
+		glog.Error(err)
 		return ""
 	}
 	return string(base64.StdEncoding.EncodeToString(key))
 }
 
 func Init() {
-	// orm.DefaultTimeLoc = time.Local
 	orm.RegisterDataBase("default", "sqlite3", "icloud.db")
 	orm.RegisterModel(new(Recoder), new(Request))
 	orm.RegisterModel(new(Role), new(Log))
@@ -36,7 +39,7 @@ func Init() {
 		r.Password = PassHash(r.Password)
 		_, _, err := Gorm.ReadOrCreate(&r, "Username")
 		if err != nil {
-			panic(err)
+			glog.Fatal(err)
 		}
 	}
 	accs := make([]string, len(Gconf.HoltWallet))
@@ -44,7 +47,7 @@ func Init() {
 		accs[i] = hw.AccountId
 	}
 	accs = append(accs, Gconf.ColdWallet)
-	// go monitor(Gconf.ServerAddr, accs)
+	go monitor(Gconf.ServerAddr, accs)
 }
 
 // 人员类别
@@ -171,4 +174,81 @@ type Log struct {
 	OprateType  int       // 操作类别
 	OpratorTime time.Time // 操作时间
 	LogoutTime  time.Time // 登出时间
+}
+
+func AddReq(roleName, gid, gwallet string, t int, u *User, currency string, amount, fees float64) (*Request, error) {
+	gbas := Gconf.GBAs
+	var gba *GateBankAccount
+	for _, g := range gbas {
+		if strings.Contains(gid, g.BankId) {
+			gba = &g
+			break
+		}
+	}
+
+	req := &Request{
+		CsId:      roleName,
+		CsTime:    time.Now(),
+		UName:     u.UName,
+		UWallet:   u.UWallet,
+		UBankName: u.UBankName,
+		UBankId:   u.UBankId,
+		UContact:  u.UContact,
+		Currency:  currency,
+		Amount:    amount,
+		Fees:      fees,
+		Type:      t,
+	}
+	req.InvoiceId = getInvoiceId(req)
+
+	if gba == nil && len(gbas) > 0 {
+		gba = &gbas[0]
+	}
+
+	tm := time.Unix(0, 0) //time.Date(1979, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	rec := &Recoder{
+		R:       req,
+		FTime:   tm,
+		MTime:   tm,
+		ATime:   tm,
+		GWallet: gwallet,
+	}
+	// 因为取款和回收会产生多个记录, 所以只有交易完成时, 才变为COK(提交状态)
+	// 所以这里只设置存款和发行的COK状态
+	if t == Deposit || t == Issue {
+		rec.Status = COK
+	}
+	if gba != nil {
+		// req.GName = gba.Name
+		// req.GBankName = gba.BankName
+		rec.GBankId = gba.BankId
+	}
+	// log.Printf("%#v", rec)
+	req.R = rec
+	_, err := Gorm.Insert(rec)
+	if err != nil {
+		glog.Fatal(err)
+	}
+	_, err = Gorm.Insert(req)
+	if err != nil {
+		glog.Fatal(err)
+	}
+	return req, nil
+}
+
+func getInvoiceId(r *Request) string {
+	s := fmt.Sprintf("%s%s%s%s%s%s%s%s%f%f%d", r.CsId, r.CsTime.String(), r.UName, r.UWallet, r.UBankName, r.UBankId, r.UContact, r.Currency, r.Amount, r.Fees, r.Type)
+	hash := sha256.Sum256([]byte(s))
+	h, err := data.NewHash256(hash[:])
+	if err != nil {
+		glog.Error(err)
+		return ""
+	}
+	return h.String()
+}
+
+// 获取发行的ICC
+func GetIssueIccs() int64 {
+	return 0
 }

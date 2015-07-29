@@ -24,11 +24,6 @@ type Fees struct {
 	Rate   float64               // 费率比率
 }
 
-		}
-		err = ioutil.WriteFile(configFile, b, os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
 type Config struct {
 	GBAs       []GateBankAccount // 收款人信息
 	Currencies []string          // 支持的货币种类
@@ -127,6 +122,11 @@ func initConf() {
 		b, err := json.MarshalIndent(conf, "", " ")
 		if err != nil {
 			panic(err)
+		}
+		err = ioutil.WriteFile(configFile, b, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
 	}
 	Gconf = conf
 }

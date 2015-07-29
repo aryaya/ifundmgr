@@ -3,34 +3,33 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
-	// "github.com/wangch/ifundmgr/models"
-	"github.com/wangch/ripple/crypto"
+	"github.com/wangch/glog"
+	// "github.com/wangch/ripple/crypto"
 	"github.com/wangch/ripple/data"
 	"github.com/wangch/ripple/websockets"
 )
 
-var gws *websockets.Remote
-
 // 监控网关账号的存款deposit和ICC发行issue 取款withdrawal和ICC赎回redeem
+var gws *websockets.Remote
 
 func monitor(serverAddr string, wallets []string) error {
 	for {
 		ws, err := websockets.NewRemote(serverAddr)
 		gws = ws
 		if err != nil {
-			log.Println("@@@ 0:", err)
+			glog.Error(err)
 			time.Sleep(time.Second * 1)
 			continue
 		}
 
 		_, err = ws.Subscribe(false, false, false, false, wallets)
 		if err != nil {
-			log.Println("@@@ 1:", err)
+			glog.Error(err)
 			time.Sleep(time.Second * 1)
 			continue
 		}
@@ -38,7 +37,7 @@ func monitor(serverAddr string, wallets []string) error {
 		for {
 			msg, ok := <-ws.Incoming
 			if !ok {
-				log.Println("@@@ 2:", "ws.Incoming closed")
+				glog.Warning("ws.Incoming chan closed.")
 				break
 			}
 
@@ -46,29 +45,44 @@ func monitor(serverAddr string, wallets []string) error {
 			case *websockets.TransactionStreamMsg:
 				// the transaction must be validated
 				// and only watch payments
+				b, err := json.MarshalIndent(msg, "", "  ")
+				if err != nil {
+					glog.Error(err)
+				}
+				glog.Info(string(b))
+				if !msg.EngineResult.Success() {
+					glog.Warning("the transaction NOT success")
+					break
+				}
+
 				if msg.Transaction.GetType() == "Payment" {
 					paymentTx := msg.Transaction.Transaction.(*data.Payment)
-					log.Println(paymentTx)
+					out := isOut(paymentTx.Account.String(), wallets)
 					if paymentTx.InvoiceID == nil {
+						glog.Warning("paymentTx.InvoiceID == nil")
 						break
 					}
-					// query the paymen tx InvoiceId in database and update tx hansh
+					// query the paymen tx InvoiceId in database and update tx hash
 					invid := paymentTx.InvoiceID.String()
 					r := &Request{}
 					Gorm.QueryTable("request").Filter("invoice_id", invid).RelatedSel().One(r)
+					if r.R == nil {
+						glog.Warning("the payment invoiceID " + invid + "is NOT in database")
+						// must be cold wallet send to hotwallet
+						break
+					}
 
 					r.R.TxHash = paymentTx.Hash.String()
-					if isOut(paymentTx.Account.String(), wallets) {
+					if out { // 存款 or 发行ICC
 						r.R.Status = OKC
-					} else {
+					} else { // 取款 or 回收ICC
 						r.R.Status = COK
 					}
-					log.Println("@@@:", r.R)
 					_, err = Gorm.Update(r.R)
 					if err != nil {
 						// have error in database
 						// must report the error msg on web
-						log.Println("@@@ 4:", err)
+						glog.Error(err)
 					}
 				}
 			}
@@ -109,97 +123,49 @@ func Payment(r *Request, sender string) error {
 	}
 	if secret == "" {
 		errMsg := fmt.Sprintf("Payment error: the Sender %s is NOT in config hotwallets", sender)
-		return errors.New(errMsg)
+		err := errors.New(errMsg)
+		glog.Error(err)
+		return err
 	}
 	return payment(gws, secret, sender, Gconf.ColdWallet, r.UWallet, r.Currency, r.InvoiceId, r.Amount)
 }
 
+// func payment(ws *websockets.Remote, secret, sender, issuer, recipient, currency, invoiceID string, amount float64) error {
+
 // secret is sender's secret
 func payment(ws *websockets.Remote, secret, sender, issuer, recipient, currency, invoiceID string, amount float64) error {
-	log.Println("payment:", sender, secret, issuer, recipient, currency, amount)
-	srcAcccount, err := data.NewAccountFromAddress(sender)
-	if err != nil {
-		return errors.New("NewAccountFromAddress error: " + err.Error())
-	}
-	ar, err := ws.AccountInfo(*srcAcccount)
-	if err != nil {
-		return errors.New("AccountInfo error: " + err.Error())
-	}
-	destAccount, err := data.NewAccountFromAddress(recipient)
-	if err != nil {
-		return err
-	}
-
-	lls := ar.LedgerSequence
-	if lls == 0 {
-		lls = ar.AccountData.Ledger()
-	}
-	if lls == 0 {
-		return errors.New("last ledger sequence can't get")
-	}
-	lls += 4
-
-	fee, err := data.NewNativeValue(int64(100))
-	if err != nil {
-		return errors.New("NewNativeValue error: " + err.Error())
-	}
-
-	tb := data.TxBase{
-		TransactionType:    data.PAYMENT,
-		Account:            *srcAcccount,
-		Sequence:           *ar.AccountData.Sequence,
-		LastLedgerSequence: &lls,
-		Fee:                *fee,
-	}
-
+	glog.Info("payment:", secret, sender, recipient, currency, amount, issuer, invoiceID)
 	sam := ""
 	if currency == "ICC" {
-		sam = fmt.Sprintf("%d/ICC", uint64(amount*1e6))
+		sam = fmt.Sprintf("%d/ICC", uint64(amount))
 	} else {
 		sam = fmt.Sprintf("%f/%s/%s", amount, currency, issuer)
 	}
 	a, err := data.NewAmount(sam)
 	if err != nil {
-		return errors.New("NewAmount error: " + sam + err.Error())
-	}
-
-	h, err := data.NewHash256(invoiceID)
-	if err != nil {
-		return errors.New("NewHash256 error: " + err.Error())
-	}
-
-	ptx := &data.Payment{
-		TxBase:      tb,
-		Destination: *destAccount,
-		Amount:      *a,
-		InvoiceID:   h,
-	}
-
-	seed, err := crypto.NewRippleHashCheck(secret, crypto.RIPPLE_FAMILY_SEED)
-	if err != nil {
+		err = errors.New("NewAmount error: " + sam + err.Error())
+		glog.Error(err)
 		return err
 	}
 
-	// Ed25519 NOT surport because client use ECDSA
-	// key, err := crypto.NewEd25519Key(seed.Payload())
-	// if err != nil {
-	// 	return err
-	// }
+	ptx := &websockets.PaymentTx{
+		TransactionType: "Payment",
+		Account:         sender,
+		Destination:     recipient,
+		Amount:          a,
+		InvoiceID:       invoiceID,
+	}
 
-	key, err := crypto.NewECDSAKey(seed.Payload())
-	if err != nil {
-		return err
-	}
-	var pseq uint32 = 0
+	// glog.Infof("payment: %+v", ptx)
 
-	err = data.Sign(ptx, key, &pseq)
+	r, err := ws.SubmitWithSign(ptx, secret)
 	if err != nil {
+		glog.Error(err)
 		return err
 	}
-	r, err := ws.Submit(ptx)
-	if err != nil {
-		return err
+	glog.Infof("pament result: %+v", r)
+	if !r.EngineResult.Success() {
+		return errors.New(r.EngineResultMessage)
 	}
-	log.Println(r)
 	return nil
 }
