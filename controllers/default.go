@@ -170,8 +170,8 @@ func (c *MainController) addReq(role *models.Role, t int) (*models.Request, erro
 	}
 	fees, err := c.GetFloat("fees")
 	if err != nil {
-		glog.Error(err)
-		return nil, err
+		glog.Warning(err)
+		fees = 0
 	}
 	u := &models.User{
 		UName:     c.GetString("name"),
