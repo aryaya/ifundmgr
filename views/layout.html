@@ -70,25 +70,17 @@
             <a href="/">首页</a>
           </li>
           <li>
-            {{if eq .Role.Type 0}}
-            <a href="/issue/add">发行ICC</a> {{else}}
-            <a href="/issue/">发行ICC</a> {{end}}
+            <a href="/issue/">发行ICC</a>
           </li>
-          {{if ne .Role.Type 0}}
           <li>
             <a href="/redeem/">回收ICC</a>
           </li>
-          {{end}}
           <li>
-            {{if eq .Role.Type 0}}
-            <a href="/deposit/add">存款</a> {{else}}
-            <a href="/deposit/">存款</a> {{end}}
+            <a href="/deposit/">存款</a>
           </li>
-          {{if ne .Role.Type 0}}
           <li>
             <a href="/withdrawal/">取款</a>
           </li>
-          {{end}}
         </ul>
         <form class="navbar-form navbar-right" role="form" action="/signout" method="post">
           <button type="submit" class="btn btn-success">Sign out</button>

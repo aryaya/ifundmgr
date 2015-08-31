@@ -74,30 +74,32 @@ const (
 )
 
 type User struct {
-	UName     string // 客户真实姓名
-	UWallet   string // 客户钱包地址
-	UBankName string // 客户银行名称
-	UBankId   string // 客户银行账号
-	UContact  string // 客户联系方式
+	UName        string // 客户真实姓名
+	UWallet      string // 客户钱包地址
+	UBankName    string // 客户银行名称
+	UBankId      string // 客户银行账号
+	UContact     string // 客户联系方式
+	UCertificate string // 客户存款凭证 文件的url
 }
 
 // 请求表, 存款和取款
 type Request struct {
-	Id     int64     // 请求ID, 唯一标识
-	CsId   string    // 客服 ID
-	CsTime time.Time `orm:"auto_now_add;type(date)"` // 客服提交时间
+	Id int64 // 请求ID, 唯一标识
+	// CsId   string    // 客服 ID
+	CTime time.Time `orm:"auto_now_add;type(date)"` // 客服提交时间
 
-	UName     string   // 客户真实姓名
-	UWallet   string   // 客户钱包地址
-	UBankName string   // 客户银行名称
-	UBankId   string   // 客户银行账号
-	UContact  string   // 客户联系方式
-	Currency  string   // 货币 USD,HKD,CNY,BTC等等
-	Amount    float64  // 金额
-	Fees      float64  // 费用 总金额 = Amount + Fees
-	Type      int      // 类别 Issue | Redeem | Deposit | Withdrawal
-	InvoiceId string   // 标识此次请求
-	R         *Recoder `orm:"rel(one)"`
+	UName        string   // 客户真实姓名
+	UWallet      string   // 客户钱包地址
+	UBankName    string   // 客户银行名称
+	UBankId      string   // 客户银行账号
+	UContact     string   // 客户联系方式
+	UCertificate string   // 客户存款凭证 文件的url
+	Currency     string   // 货币 USD,HKD,CNY,BTC等等
+	Amount       float64  // 金额
+	Fees         float64  // 费用 总金额 = Amount + Fees
+	Type         int      // 类别 Issue | Redeem | Deposit | Withdrawal
+	InvoiceId    string   // 标识此次请求
+	R            *Recoder `orm:"rel(one)"`
 }
 
 // 状态
@@ -176,7 +178,7 @@ type Log struct {
 	LogoutTime  time.Time // 登出时间
 }
 
-func AddReq(roleName, gid, gwallet string, t int, u *User, currency string, amount, fees float64) (*Request, error) {
+func AddReq(gid, gwallet string, t int, u *User, currency string, amount, fees float64) (*Request, error) {
 	gbas := Gconf.GBAs
 	var gba *GateBankAccount
 	for _, g := range gbas {
@@ -187,17 +189,17 @@ func AddReq(roleName, gid, gwallet string, t int, u *User, currency string, amou
 	}
 
 	req := &Request{
-		CsId:      roleName,
-		CsTime:    time.Now(),
-		UName:     u.UName,
-		UWallet:   u.UWallet,
-		UBankName: u.UBankName,
-		UBankId:   u.UBankId,
-		UContact:  u.UContact,
-		Currency:  currency,
-		Amount:    amount,
-		Fees:      fees,
-		Type:      t,
+		CTime:        time.Now(),
+		UName:        u.UName,
+		UWallet:      u.UWallet,
+		UBankName:    u.UBankName,
+		UBankId:      u.UBankId,
+		UContact:     u.UContact,
+		UCertificate: u.UCertificate,
+		Currency:     currency,
+		Amount:       amount,
+		Fees:         fees,
+		Type:         t,
 	}
 	req.InvoiceId = getInvoiceId(req)
 
@@ -238,7 +240,7 @@ func AddReq(roleName, gid, gwallet string, t int, u *User, currency string, amou
 }
 
 func getInvoiceId(r *Request) string {
-	s := fmt.Sprintf("%s%s%s%s%s%s%s%s%f%f%d", r.CsId, r.CsTime.String(), r.UName, r.UWallet, r.UBankName, r.UBankId, r.UContact, r.Currency, r.Amount, r.Fees, r.Type)
+	s := fmt.Sprintf("%s%s%s%s%s%s%s%s%f%f%d", r.CTime.String(), r.UName, r.UWallet, r.UBankName, r.UBankId, r.UContact, r.Currency, r.Amount, r.Fees, r.Type)
 	hash := sha256.Sum256([]byte(s))
 	h, err := data.NewHash256(hash[:])
 	if err != nil {

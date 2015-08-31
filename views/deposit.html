@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- <link rel="apple-touch-icon" href="apple-touch-icon.png"> -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+    body {
+        padding-top: 50px;
+        padding-bottom: 20px;
+    }
+    
+    #container0 {
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+    
+    .input-group {
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+    
+    .table {
+        padding-top: 20px;
+    }
+    
+    small {
+        text-align: right;
+        color: #1234;
+    }
+    </style>
+</head>
+
+<body>
+    <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#"></a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href="/">首页</a>
+                    </li>
+                    <li>
+                        <a href="https://icloudcoin.org">ICC</a>
+                    </li>
+                </ul>
+            </div>
+            <!--/.navbar-collapse -->
+        </div>
+    </nav>
+    <div class="container" id="container0">
+        <div class="container">
+            <div class="row">
+                <form role="form" class="col-md-offset-2 col-md-8" action="/deposit/amount.action" method="post">
+                    <div class="input-group">
+                        <span class="input-group-addon" id="currence">存款货币</span>
+                        <select name="currency" class="form-control" aria-describedby="currence">
+                            {{$amt := .Amt}} {{range $cc := .Currencies}}
+                            <option {{if $amt}} {{if eq $amt.Currency $cc }} selected="true" {{end}} {{end}}>{{.}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="amount">存款数额</span>
+                        <input type="number" name="amount" {{if .Amt }} value="{{.Amt.Amount}}" {{end}} class="form-control" placeholder="" aria-describedby="amount" min="10" , required/>
+                    </div>
+                    <div class="input-group">
+                        <button type="submit" class="btn btn-primary btn-lg">确定</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {{if .Amt}}
+        <div class="container">
+            <div class="col-md-offset-2 col-md-8">
+                <p>请您通过柜台或者网上支付的方式汇入到
+                    <mark>{{.Amt.BankName}}</mark>账号
+                    <mark>{{.Amt.BankId}} </mark> 共
+                    <mark>{{.Amt.Total}} {{.Amt.Currency}}</mark>, 其中手续费为
+                    <mark>{{.Amt.Fees}} {{.Amt.Currency}}</mark>, 如果汇入已经完成, 请填写以下存款记录, 系统将在24小时内为你转账:</p>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row">
+                <form role="form" class="col-md-offset-2 col-md-8" action="/deposit/add.action" enctype="multipart/form-data" method="post">
+                    <input type="hidden" name="gbankId" value="{{.Amt.BankId}}">
+                    <input type="hidden" name="currency" value="{{.Amt.Currency}}">
+                    <input type="hidden" name="amount" value="{{.Amt.Amount}}">
+                    <input type="hidden" name="fees" value="{{.Amt.Fees}}">
+
+                    <div class="input-group">
+                        <span class="input-group-addon" id="name">用户姓名</span>
+                        <input type="text" name="name" class="form-control" aria-describedby="name" required/>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="bankName">银行名称</span>
+                        <input type="text" name="bankName" class="form-control" aria-describedby="bankName" required/>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="bankId">银行账号</span>
+                        <input type="text" name="bankId" class="form-control" aria-describedby="bankId" required/>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="iccWallet">ICC 地址</span>
+                        <input type="text" name="iccWallet" class="form-control" aria-describedby="iccWallet" required/>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="contact">联系方式</span>
+                        <input type="text" name="contact" class="form-control" aria-describedby="contact" required/>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon" id="certificate">存款凭证</span>
+                        <input type="file" name="certificate" class="form-control" aria-describedby="certificate" required/>
+                    </div>
+                    <div class="input-group">
+                        <button type="submit" class="btn btn-primary btn-lg">提交</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {{end}}
+        <!-- /container -->
+        </script>
+        <script src="/js/jquery.min.js"></script>
+        <script src="/js/bootstrap.min.js"></script>
+        <script src="/js/plugins.js"></script>
+        <script src="/js/main.js"></script>
+</body>
+
+</html>

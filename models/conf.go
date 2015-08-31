@@ -32,8 +32,8 @@ type Config struct {
 	ServerAddr string            // Server 地址
 	Timeout    int               // 超过Timeout小时请求没有审批, 则超时关闭
 	Roles      []Role            // 默认的用户
-	Fees       Fees              // 交易费
 	UsdRate    float64           // 当前 1 icc == ? usd 默认为1
+	Fees       Fees              // 交易费
 }
 
 var configFile = "./conf.json"
@@ -75,17 +75,28 @@ var defaultConf = &Config{
 	HoltWallet: []HortWallet{{"w02", "iwsZ7gxHFzu2xbj8YMf4UvK1PrDEMuxGkf", "ss9qoFiFNkokVfgrb3YkKHido6a1q"}, {"w03", "ine3v1DStiLfncJiCEgyfFct1i9t6M7z9E", "snwh9xAzpVoh9WxRc3pVENBJV44fj"}},
 	ServerAddr: "wss://local.icloud.com:19528",
 	Timeout:    24,
+	Fees: Fees{
+		FeeMap: map[string][2]float64{
+			"CNY": {5, 50},
+			"HKD": {6, 60},
+			"USD": {1, 10},
+			"EUR": {1, 10},
+			"ICC": {1, 10},
+			"BTC": {0.0005, 0.01},
+		},
+		Rate: 0.01,
+	},
 	Roles: []Role{
-		{
-			Username: "cc",
-			Password: "passwordC",
-			Type:     RoleC,
-		},
-		{
-			Username: "gc",
-			Password: "passwordG",
-			Type:     RoleC,
-		},
+		// {
+		// 	Username: "cc",
+		// 	Password: "passwordC",
+		// 	Type:     RoleC,
+		// },
+		// {
+		// 	Username: "gc",
+		// 	Password: "passwordG",
+		// 	Type:     RoleC,
+		// },
 		{
 			Username: "ff",
 			Password: "passwordF",
@@ -101,17 +112,6 @@ var defaultConf = &Config{
 			Password: "passwordA",
 			Type:     RoleA,
 		},
-	},
-	Fees: Fees{
-		FeeMap: map[string][2]float64{
-			"CNY": {5, 50},
-			"HKD": {6, 60},
-			"USD": {1, 10},
-			"EUR": {1, 10},
-			"ICC": {1, 10},
-			"BTC": {0.0005, 0.01},
-		},
-		Rate: 0.01,
 	},
 }
 

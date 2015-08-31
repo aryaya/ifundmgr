@@ -23,6 +23,7 @@ func Init() {
 	beego.SetStaticPath("/js", "static/js")
 	beego.SetStaticPath("/css", "static/css")
 	beego.SetStaticPath("/fonts", "static/fonts")
+	beego.SetStaticPath("/certificates", "./certificates")
 
 	beego.SessionOn = true
 	beego.SessionName = "icloudsessionid"
@@ -40,7 +41,7 @@ func Init() {
 
 var filterUser = func(ctx *context.Context) {
 	us := ctx.Request.URL.String()
-	if strings.Contains(us, "api/quote") {
+	if strings.Contains(us, "quote") || strings.Contains(us, "deposit") {
 		return
 	}
 	_, ok := ctx.Input.Session("Role").(*models.Role)
@@ -78,13 +79,17 @@ func (c *MainController) Get() {
 	c.TplNames = "index.html"
 }
 
+func RandToken() string {
+	h := md5.New()
+	io.WriteString(h, "wangch"+time.Now().String())
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
 func (c *MainController) SigninGet() {
 	c.Data["ShowSignin"] = true
 	c.Layout = "layout.html"
 	c.TplNames = "index.html"
-	h := md5.New()
-	io.WriteString(h, "wangch"+time.Now().String())
-	token := fmt.Sprintf("%x", h.Sum(nil))
+	token := RandToken()
 	c.Data["ErrMsg"] = c.GetSession("ErrMsg")
 	c.Data["Token"] = token
 	c.SetSession("Token", token)
@@ -120,35 +125,10 @@ func (c *MainController) SigninPost() {
 	c.Redirect("/", 302)
 }
 
-func (c *MainController) getScRole() *models.Role {
+func (c *MainController) getRole() *models.Role {
 	r := c.GetSession("Role").(*models.Role)
-	if r.Type != models.RoleC {
-		glog.ErrorDepth(1, "getNoScRole: r.Type != models.RoleC")
-		c.Redirect("/", 302)
-		return nil
-	}
 	c.Data["Role"] = r
 	return r
-}
-
-func (c *MainController) getNoScRole() *models.Role {
-	r := c.GetSession("Role").(*models.Role)
-	if r.Type == models.RoleC {
-		glog.ErrorDepth(1, "getNoScRole: r.Type == models.RoleC")
-		c.Redirect("/", 302)
-		return nil
-	}
-	c.Data["Role"] = r
-	return r
-}
-
-func (c *MainController) csHtml(isDeposit, ok bool, r *models.Role) {
-	c.Data["ShowSignin"] = false
-	c.Data["IsDeposit"] = isDeposit
-	c.Data["OK"] = ok
-	c.Data["Gbas"] = models.Gconf.GBAs
-	c.Layout = "layout.html"
-	c.TplNames = "form.html"
 }
 
 const hextable = "0123456789ABCDEF"
@@ -162,95 +142,6 @@ func b2h(h []byte) []byte {
 	return b
 }
 
-func (c *MainController) addReq(role *models.Role, t int) (*models.Request, error) {
-	amount, err := c.GetFloat("amount")
-	if err != nil {
-		glog.Error(err)
-		return nil, err
-	}
-	fees, err := c.GetFloat("fees")
-	if err != nil {
-		glog.Warning(err)
-		fees = 0
-	}
-	u := &models.User{
-		UName:     c.GetString("name"),
-		UWallet:   c.GetString("iccWallet"),
-		UBankName: c.GetString("bankName"),
-		UBankId:   c.GetString("bankId"),
-		UContact:  c.GetString("contact"),
-	}
-	s := c.GetString("currency")
-	currency := getCurrencyID(s)
-	if t == models.Issue || t == models.Redeem {
-		currency = "ICC"
-	}
-	return models.AddReq(role.Username, c.GetString("gba"), "", t, u, currency, amount, fees)
-}
-
-func (c *MainController) AddIssueGet() {
-	r := c.getScRole()
-	if r == nil {
-		c.Data["ErrMsg"] = PDErr.Error()
-		return
-	}
-	c.Data["Role"] = r
-	c.csHtml(false, false, r)
-}
-
-func (c *MainController) AddIssuePost() {
-	r := c.getScRole()
-	if r == nil {
-		c.Data["ErrMsg"] = PDErr.Error()
-		return
-	}
-	_, err := c.addReq(r, models.Issue)
-	if err != nil {
-		c.Data["ErrMsg"] = err.Error()
-		return
-	}
-	c.csHtml(false, true, r)
-}
-
-func (c *MainController) AddDepositGet() {
-	r := c.getScRole()
-	if r == nil {
-		c.Data["ErrMsg"] = PDErr.Error()
-		return
-	}
-	c.csHtml(true, false, r)
-}
-
-func (c *MainController) AddDepositPost() {
-	r := c.getScRole()
-	if r == nil {
-		c.Data["ErrMsg"] = PDErr.Error()
-		return
-	}
-	_, err := c.addReq(r, models.Deposit)
-	if err != nil {
-		c.Data["ErrMsg"] = err.Error()
-		return
-	}
-	c.csHtml(true, true, r)
-}
-
-var tableHeaders = []string{
-	"时间",
-	"用户姓名",
-	"用户钱包",
-	"用户银行",
-	"用户银行账号",
-	"货币",
-	"金额",
-	"费用",
-	"状态",
-	"网关银行账号",
-	"网关钱包",
-	"详情",
-	"审核",
-}
-
 type HtmlReq struct {
 	*models.Request
 	Rec     *models.Recoder
@@ -261,7 +152,7 @@ type HtmlReq struct {
 
 func (c *MainController) getReqs(role *models.Role, tname string, status int, st, et *time.Time, t int) []HtmlReq {
 	var reqs []*models.Request
-	qs := models.Gorm.QueryTable(tname).Filter("Type", t).Filter("CsTime__gte", st).Filter("CsTime__lte", et).RelatedSel()
+	qs := models.Gorm.QueryTable(tname).Filter("Type", t).Filter("CTime__gte", st).Filter("CTime__lte", et).RelatedSel()
 	if status != -1 {
 		qs.Filter("R__Status", status).All(&reqs)
 	} else {
@@ -283,7 +174,7 @@ func (c *MainController) getReqs(role *models.Role, tname string, status int, st
 var PDErr error = errors.New("Permission denied for the user")
 
 func (c *MainController) queryTable() error {
-	r := c.getNoScRole()
+	r := c.getRole()
 	if r == nil {
 		return PDErr
 	}
@@ -308,7 +199,7 @@ func (c *MainController) queryTable() error {
 
 func (c *MainController) getTable(t int) error {
 	tname := "request"
-	r := c.getNoScRole()
+	r := c.getRole()
 	if r == nil {
 		return PDErr
 	}
@@ -333,10 +224,10 @@ func (c *MainController) getTable(t int) error {
 	c.Data["StartDate"] = st.Format("2006-01-02")
 	c.Data["EndDate"] = et.Format("2006-01-02")
 	c.Data["Requests"] = reqs
-	c.Data["TableHeaders"] = tableHeaders
 	c.Data["StatusSlice"] = models.StatusSlice
 	c.Data["Status"] = ss
 	c.Data["Gbas"] = models.Gconf.GBAs
+	c.Data["Type"] = t
 
 	c.Layout = "layout.html"
 	c.TplNames = "reqtable.html"
@@ -408,9 +299,6 @@ func (c *MainController) WithdrawalsPost() {
 }
 
 func canVerify(rtype, status, typ int) int {
-	if rtype == models.RoleC {
-		return -1
-	}
 	if rtype == models.RoleF {
 		if status == models.COK {
 			return models.FOK
@@ -439,11 +327,13 @@ func canModifyGBankId(hr *HtmlReq) bool {
 }
 
 func canModifyGWallet(hr *HtmlReq) bool {
+	glog.Infoln(hr.Role.Type == models.RoleF, hr.Rec.Status == models.COK, (hr.Type == models.Deposit || hr.Type == models.Issue))
 	if hr.Role.Type == models.RoleF &&
 		hr.Rec.Status == models.COK &&
 		(hr.Type == models.Deposit || hr.Type == models.Issue) {
 		return true
 	}
+	glog.Infoln("go here")
 	return false
 }
 
@@ -460,6 +350,7 @@ func getHoltWallets() []string {
 	for i, x := range models.Gconf.HoltWallet {
 		hws[i] = x.Name + ":" + x.AccountId
 	}
+	glog.Infoln(hws)
 	return hws
 }
 
@@ -468,7 +359,7 @@ func showVerify(hr *HtmlReq) bool {
 }
 
 func (c *MainController) verify(isOut bool) error {
-	r := c.getNoScRole()
+	r := c.getRole()
 	if r == nil {
 		return PDErr
 	}
@@ -565,7 +456,7 @@ func (c *MainController) VerifyWithdrawal() {
 }
 
 func (c *MainController) updateGbank() error {
-	r := c.getNoScRole()
+	r := c.getRole()
 	if r == nil {
 		return PDErr
 	}
@@ -630,7 +521,7 @@ func (c *MainController) WithdrawalUpdateGbank() {
 }
 
 func (c *MainController) updateHotwallet() error {
-	r := c.getNoScRole()
+	r := c.getRole()
 	if r == nil {
 		return PDErr
 	}

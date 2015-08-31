@@ -1,210 +1,221 @@
 <!-- search form -->
 <form method="post">
-  <div class="row">
-    <div class="col-md-3">
-      <div class="input-group date" id="date1">
-        <input type="text" name="stime" value="{{.StartDate}}" class="form-control">
-        <span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>
-      </div>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="input-group date" id="date1">
+                <input type="text" name="stime" value="{{.StartDate}}" class="form-control">
+                <span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="input-group date" id="date2">
+                <input type="text" name="etime" value="{{.EndDate}}" class="form-control">
+                <span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="input-group">
+                <span class="input-group-addon" id="status">状态</span>
+                <select name="status" class="form-control" aria-describedby="status"> {{$s := .Status}} {{range .StatusSlice}}
+                    <option {{if eq $s . }} selected {{end}}>{{.}}</option>
+                    {{end}}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="input-group">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </div>
+        </div>
     </div>
-    <div class="col-md-3">
-      <div class="input-group date" id="date2">
-        <input type="text" name="etime" value="{{.EndDate}}" class="form-control">
-        <span class="input-group-addon"><i class="glyphicon glyphicon-th"></i></span>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="input-group">
-        <span class="input-group-addon" id="status">状态</span>
-        <select name="status" class="form-control" aria-describedby="status"> {{$s := .Status}} {{range .StatusSlice}}
-          <option {{if eq $s . }} selected {{end}}>{{.}}</option>
-          {{end}}
-        </select>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="input-group">
-        <button class="btn btn-primary" type="submit">Search</button>
-      </div>
-    </div>
-  </div>
 </form>
 <!-- requests table -->
 <table class="table table-striped table-bordered table-responsive">
-  <thead>
-    <tr>
-      {{range .TableHeaders}}
-      <th>{{.}}</th>
-      {{end}}
-    </tr>
-  </thead>
-  <tbody>
-    {{range .Requests}}
-    <tr>
-      <td>{{dateformat .CsTime "2006-01-02 15:04:05"}}</td>
-      <td>{{.UName}}</td>
-      <td>{{.UWallet}}</td>
-      <td>{{.UBankName}}</td>
-      <td>{{.UBankId}}</td>
-      <td>{{.Currency}}</td>
-      <td>{{.Amount}}</td>
-      <td>{{.Fees}}</td>
-      <td>{{.Status}}</td>
-      <td>
-        {{.Rec.GBankId}} {{if .|canModifyGBankId}}
-        <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modalb{{.Id}}">选择</button>
-        <!-- modal dialog -->
-        <div class="modal fade" id="modalb{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-          <div class="modal-dialog ">
-            <div class="modal-content">
-              <form action="gbankid?id={{.Id}}" method="post">
-                <div class="modal-header">
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                  <h5 class="modal-title" id="myModalLabel">选择网关银行账号</h5>
-                </div>
-                <div class="modal-body">
-                  <div class="container">
-                    {{with $gbas := getGbas}} {{range $gbas}}
-                    <div class="row">
-                      <div class="radio">
-                        <label>
-                          <input type="radio" name="Gba" value="{{.BankId}}" checked> {{.Name}} {{.BankName}} {{.BankId}} {{range .Currencies}} {{.}} {{end}}
-                        </label>
-                      </div>
+    <thead>
+        <tr>
+            <th>时间</th>
+            <th>用户姓名</th>
+            <th>用户钱包</th>
+            <th>用户银行账号</th>
+            <th>货币</th>
+            <th>金额</th>
+            <th>费用</th>
+            {{if or (eq .Type 0) (eq .Type 2)}}
+            <th>存款凭证</th>
+            {{end}}
+            <th>状态</th>
+            <th>网关银行账号</th>
+            <th>网关钱包</th>
+            <th>详情</th>
+            <th>审核</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Requests}}
+        <tr>
+            <td>{{dateformat .CTime "2006-01-02 15:04:05"}}</td>
+            <td>{{.UName}}</td>
+            <td>{{.UWallet}}</td>
+            <td>{{.UBankId}}</td>
+            <td>{{.Currency}}</td>
+            <td>{{.Amount}}</td>
+            <td>{{.Fees}}</td>
+            {{if or (eq .Type 0) (eq .Type 2)}}
+            <td><a href="{{.UCertificate}}" target="view_window"><img src="{{.UCertificate}}" class="img-thumbnail"></a></td>
+            {{end}}
+            <td>{{.Status}}</td>
+            <td>
+                {{.Rec.GBankId}} {{if .|canModifyGBankId}}
+                <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modalb{{.Id}}">选择</button>
+                <!-- modal dialog -->
+                <div class="modal fade" id="modalb{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog ">
+                        <div class="modal-content">
+                            <form action="gbankid?id={{.Id}}" method="post">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <h5 class="modal-title" id="myModalLabel">选择网关银行账号</h5>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="container">
+                                        {{with $gbas := getGbas}} {{range $gbas}}
+                                        <div class="row">
+                                            <div class="radio">
+                                                <label>
+                                                    <input type="radio" name="Gba" value="{{.BankId}}" checked> {{.Name}} {{.BankName}} {{.BankId}} {{range .Currencies}} {{.}} {{end}}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {{end}} {{end}}
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-primary">确认</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    {{end}} {{end}}
-                  </div>
                 </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">确认</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-        {{end}}
-      </td>
-      <td>
-        {{.Rec.GWallet}} {{if .|canModifyGWallet}}
-        <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modalw{{.Id}}">选择</button>
-        <!-- modal dialog -->
-        <div class="modal fade" id="modalw{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-          <div class="modal-dialog ">
-            <div class="modal-content">
-              <form action="hotwallet?id={{.Id}}" method="post">
-                <div class="modal-header">
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                  <h5 class="modal-title" id="myModalLabel">选择网关钱包</h5>
-                </div>
-                <div class="modal-body">
-                  <div class="container">
-                    {{with $hws := getHoltWallets}} {{range $hws}}
-                    <div class="row">
-                      <div class="radio">
-                        <label>
-                          <input type="radio" name="HotWallet" value="{{.}}" checked> {{.}}
-                        </label>
-                      </div>
-                    </div>
-                    {{end}} {{end}}
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">确认</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-        {{end}}
-      </td>
-      <td>
-        <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modal{{.Id}}">详情</button>
-        <!-- modal dialog -->
-        <div class="modal fade" id="modal{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-          <div class="modal-dialog ">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h5 class="modal-title" id="myModalLabel">详细</h5>
-              </div>
-              <div class="modal-body">
-                <div class="container">
-                  <div class="row">
-                    <h5 class="col-md-6">{{.UName}}<small class="col-md-4">客户姓名:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.UBankName}}<small class="col-md-4">客户银行:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.UBankId}}<small class="col-md-4">客户账号:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.UWallet}}<small class="col-md-4">客户钱包:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.Rec.GBankId}}<small class="col-md-4">网关银行账号:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.Rec.GWallet}}<small class="col-md-4">网关钱包:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.Currency}}<small class="col-md-4">货币:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.Amount}}<small class="col-md-4">金额:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.Fees}}<small class="col-md-4">手续费:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.CsId}}<small class="col-md-4">客服ID:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{dateformat .CsTime "2006-01-02 15:04:05"}}<small class="col-md-4">客服提交时间:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.R.FId}}<small class="col-md-4">财务ID:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{dateformat .R.FTime "2006-01-02 15:04:05"}}<small class="col-md-4">财务审批时间:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.R.MId}}<small class="col-md-4">总监ID:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{dateformat .R.MTime "2006-01-02 15:04:05"}}<small class="col-md-4">总监审批时间:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{.R.AId}}<small class="col-md-4">会计ID:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{dateformat .R.ATime "2006-01-02 15:04:05"}}<small class="col-md-4">会计完成时间:</small></h5>
-                  </div>
-                  <div class="row">
-                    <h5 class="col-md-6">{{fmtStatus .R.Status}}<small class="col-md-4">状态:</small></h5>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <!-- <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> -->
-                {{if .|showVerify}}
-                <form action="verify?id={{.Id}}" method="post">
-                  <button type="submit" class="btn btn-primary">确认</button>
-                </form>
                 {{end}}
-                <!-- <input type="button" class="btn btn-primary" onclick="windows.location.hrel('verify?id={{.Rec.Id}}')">Verify</button> -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </td>
-      <td>
-        <form action="verify?id={{.Id}}" method="post">
-          <button type="submit" class="btn btn-primary" {{if not (.|showVerify)}} disabled="disabled" {{end}}>确认</button>
-        </form>
-      </td>
-    </tr>
-    {{end}}
-  </tbody>
+            </td>
+            <td>
+                {{.Rec.GWallet}} {{if .|canModifyGWallet}}
+                <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modalw{{.Id}}">选择</button>
+                <!-- modal dialog -->
+                <div class="modal fade" id="modalw{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog ">
+                        <div class="modal-content">
+                            <form action="hotwallet?id={{.Id}}" method="post">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <h5 class="modal-title" id="myModalLabel">选择网关钱包</h5>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="container">
+                                        {{with $hws := getHoltWallets}} {{range $hws}}
+                                        <div class="row">
+                                            <div class="radio">
+                                                <label>
+                                                    <input type="radio" name="HotWallet" value="{{.}}" checked> {{.}}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {{end}} {{end}}
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-primary">确认</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </td>
+            <td>
+                <button type="submit" class="btn btn-default" data-toggle="modal" data-target="#modal{{.Id}}">详情</button>
+                <!-- modal dialog -->
+                <div class="modal fade" id="modal{{.Id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog ">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                <h5 class="modal-title" id="myModalLabel">详细</h5>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container">
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.UName}}<small class="col-md-4">客户姓名:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.UBankName}}<small class="col-md-4">客户银行:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.UBankId}}<small class="col-md-4">客户账号:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.UWallet}}<small class="col-md-4">客户钱包:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.Rec.GBankId}}<small class="col-md-4">网关银行账号:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.Rec.GWallet}}<small class="col-md-4">网关钱包:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.Currency}}<small class="col-md-4">货币:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.Amount}}<small class="col-md-4">金额:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.Fees}}<small class="col-md-4">手续费:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{dateformat .CTime "2006-01-02 15:04:05"}}<small class="col-md-4">提交时间:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.R.FId}}<small class="col-md-4">财务ID:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{dateformat .R.FTime "2006-01-02 15:04:05"}}<small class="col-md-4">财务审批时间:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.R.MId}}<small class="col-md-4">总监ID:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{dateformat .R.MTime "2006-01-02 15:04:05"}}<small class="col-md-4">总监审批时间:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{.R.AId}}<small class="col-md-4">会计ID:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{dateformat .R.ATime "2006-01-02 15:04:05"}}<small class="col-md-4">会计完成时间:</small></h5>
+                                    </div>
+                                    <div class="row">
+                                        <h5 class="col-md-6">{{fmtStatus .R.Status}}<small class="col-md-4">状态:</small></h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <!-- <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> -->
+                                {{if .|showVerify}}
+                                <form action="verify?id={{.Id}}" method="post">
+                                    <button type="submit" class="btn btn-primary">确认</button>
+                                </form>
+                                {{end}}
+                                <!-- <input type="button" class="btn btn-primary" onclick="windows.location.hrel('verify?id={{.Rec.Id}}')">Verify</button> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <form action="verify?id={{.Id}}" method="post">
+                    <button type="submit" class="btn btn-primary" {{if not (.|showVerify)}} disabled="disabled" {{end}}>确认</button>
+                </form>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
 </table>

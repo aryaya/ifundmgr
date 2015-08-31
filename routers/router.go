@@ -19,8 +19,8 @@ func Init() {
 	beego.Router("/redeem", &controllers.MainController{}, "get:RedeemsGet;post:RedeemsPost")
 	beego.Router("/withdrawal", &controllers.MainController{}, "get:WithdrawalsGet;post:WithdrawalsPost")
 
-	beego.Router("/issue/add", &controllers.MainController{}, "get:AddIssueGet;post:AddIssuePost")
-	beego.Router("/deposit/add", &controllers.MainController{}, "get:AddDepositGet;post:AddDepositPost")
+	// beego.Router("/issue/add", &controllers.MainController{}, "get:AddIssueGet;post:AddIssuePost")
+	// beego.Router("/deposit/add", &controllers.MainController{}, "get:AddDepositGet;post:AddDepositPost")
 
 	beego.Router("/issue/verify?:id", &controllers.MainController{}, "post:VerifyIssue")
 	beego.Router("/deposit/verify?:id", &controllers.MainController{}, "post:VerifyDeposit")
@@ -37,5 +37,8 @@ func Init() {
 	beego.Router("/redeem/hotwallet?:id", &controllers.MainController{}, "post:RedeemUpdateHotwallet")
 	beego.Router("/withdrawal/hotwallet?:id", &controllers.MainController{}, "post:WithdrawalUpdateHotwallet")
 
-	beego.Router("/api/quote", &controllers.MainController{}, "get:Quote")
+	beego.Router("/api/quote", &controllers.MainController{}, "get:ApiQuote")
+	beego.Router("/api/deposit", &controllers.MainController{}, "get:ApiDepositGet")
+	beego.Router("/api/deposit/amount", &controllers.MainController{}, "post:ApiDepositAmountPost")
+	beego.Router("/api/deposit/add", &controllers.MainController{}, "post:ApiDepositPost")
 }

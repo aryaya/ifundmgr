@@ -47,7 +47,7 @@ func sendResp(resp interface{}, ctx *context.Context) error {
 }
 
 // https://ripplecn.com/bridge?type=quote&amount=1%2FCNY&destination=z&address=ra5tSyQ2cvJUHfAvEdmC89HKSKZTn7xXMw&alipay_account=aa&full_name=bb&contact_info=cc
-func (c *MainController) Quote() {
+func (c *MainController) ApiQuote() {
 	sa := c.Ctx.Request.URL.Query().Get("amount")
 	address := c.Ctx.Request.URL.Query().Get("address")
 	bank_name := c.Ctx.Request.URL.Query().Get("bank_name")
@@ -62,7 +62,7 @@ func (c *MainController) Quote() {
 		sendResp(resp, c.Ctx)
 		return
 	}
-	glog.Info("Quote:", address, bank_name, card_number, full_name, contact_info, a, a.IsNative())
+	glog.Info("ApiQuote:", address, bank_name, card_number, full_name, contact_info, a, a.IsNative())
 	sv := a.Value.String()
 	am, err := strconv.ParseFloat(sv, 64)
 	if err != nil {
@@ -105,7 +105,7 @@ func (c *MainController) Quote() {
 	if a.IsNative() {
 		t = models.Redeem
 	}
-	req, err := models.AddReq("", "", models.Gconf.ColdWallet, t, u, a.Currency.String(), am/1e6, fee)
+	req, err := models.AddReq("", models.Gconf.ColdWallet, t, u, a.Currency.String(), am/1e6, fee)
 	if err != nil {
 		// glog.Error(err)
 		return
