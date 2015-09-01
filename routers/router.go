@@ -38,7 +38,12 @@ func Init() {
 	beego.Router("/withdrawal/hotwallet?:id", &controllers.MainController{}, "post:WithdrawalUpdateHotwallet")
 
 	beego.Router("/api/quote", &controllers.MainController{}, "get:ApiQuote")
+
 	beego.Router("/api/deposit", &controllers.MainController{}, "get:ApiDepositGet")
 	beego.Router("/api/deposit/amount", &controllers.MainController{}, "post:ApiDepositAmountPost")
 	beego.Router("/api/deposit/add", &controllers.MainController{}, "post:ApiDepositPost")
+
+	beego.Router("/api/buyicc", &controllers.MainController{}, "get:ApiDepositGet")
+	beego.Router("/api/buyicc/amount", &controllers.MainController{}, "post:ApiDepositAmountPost")
+	beego.Router("/api/buyicc/add", &controllers.MainController{}, "post:ApiDepositPost")
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/wangch/glog"
 	"github.com/wangch/ifundmgr/models"
@@ -88,7 +89,14 @@ type AmountInfo struct {
 
 func (c *MainController) ApiDepositGet() {
 	currencys := models.Gconf.Currencies
+	upath := c.Ctx.Request.URL.Path
+	if strings.Contains(upath, "buyicc") {
+		c.Data["BuyIcc"] = true
+	} else {
+		c.Data["BuyIcc"] = false
+	}
 	c.Data["Currencies"] = currencys
+	c.Data["USDRate"] = models.Gconf.UsdRate
 	c.TplNames = "deposit.html"
 }
 
@@ -106,12 +114,21 @@ func getGba(currency string) (*models.GateBankAccount, error) {
 
 func (c *MainController) ApiDepositAmountPost() {
 	glog.Infof("%#+v", c.Ctx.Request)
-	s := c.GetString("currency")
-	if s == "" {
-		glog.Errorln("currency is nil")
-		return
+	upath := c.Ctx.Request.URL.Path
+	buyIcc := false
+	if strings.Contains(upath, "buyicc") {
+		buyIcc = true
 	}
-	currency := getCurrencyID(s)
+
+	currency := "USD"
+	if !buyIcc {
+		s := c.GetString("currency")
+		if s == "" {
+			glog.Errorln("currency is nil")
+			return
+		}
+		currency = getCurrencyID(s)
+	}
 
 	gba, err := getGba(currency)
 	if err != nil {
@@ -123,6 +140,10 @@ func (c *MainController) ApiDepositAmountPost() {
 	if err != nil {
 		glog.Errorln(err)
 		return
+	}
+
+	if buyIcc {
+		amount *= models.Gconf.UsdRate
 	}
 
 	fees := models.Gconf.Fees
@@ -148,10 +169,21 @@ func (c *MainController) ApiDepositAmountPost() {
 	currencys := models.Gconf.Currencies
 	c.Data["Currencies"] = currencys
 	c.Data["Amt"] = amt
+	c.Data["BuyIcc"] = buyIcc
 	c.TplNames = "deposit.html"
 }
 
 func (c *MainController) ApiDepositPost() {
-	c.addReq(models.Deposit)
-	c.Redirect("/api/deposit", 302)
+	upath := c.Ctx.Request.URL.Path
+	buyIcc := false
+	if strings.Contains(upath, "buyicc") {
+		buyIcc = true
+	}
+	if buyIcc {
+		c.addReq(models.Issue)
+		c.Redirect("/api/buyicc", 302)
+	} else {
+		c.addReq(models.Deposit)
+		c.Redirect("/api/deposit", 302)
+	}
 }

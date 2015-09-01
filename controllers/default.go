@@ -41,7 +41,7 @@ func Init() {
 
 var filterUser = func(ctx *context.Context) {
 	us := ctx.Request.URL.String()
-	if strings.Contains(us, "quote") || strings.Contains(us, "deposit") {
+	if strings.Contains(us, "api/quote") || strings.Contains(us, "api/deposit") || strings.Contains(us, "api/buyicc") {
 		return
 	}
 	_, ok := ctx.Input.Session("Role").(*models.Role)

@@ -51,7 +51,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="#"></a>
+                <a class="navbar-brand" href="#">{{if .BuyIcc}}购买ICC {{else}}存款{{end}}</a>
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
@@ -69,7 +69,12 @@
     <div class="container" id="container0">
         <div class="container">
             <div class="row">
-                <form role="form" class="col-md-offset-2 col-md-8" action="/deposit/amount.action" method="post">
+                <form role="form" class="col-md-offset-2 col-md-8" action="/{{if .BuyIcc}}buyicc{{else}}deposit{{end}}/amount.action" method="post">
+                    {{if .BuyIcc}}
+                    <p>当前购买ICC使用USD结算:
+                        <mark>1 ICC = {{.USDRate}} USD </mark>
+                    </p>
+                    {{else}}
                     <div class="input-group">
                         <span class="input-group-addon" id="currence">存款货币</span>
                         <select name="currency" class="form-control" aria-describedby="currence">
@@ -78,8 +83,9 @@
                             {{end}}
                         </select>
                     </div>
+                    {{end}}
                     <div class="input-group">
-                        <span class="input-group-addon" id="amount">存款数额</span>
+                        <span class="input-group-addon" id="amount">{{if .BuyIcc}}购买数额{{else}}存款数额{{end}}</span>
                         <input type="number" name="amount" {{if .Amt }} value="{{.Amt.Amount}}" {{end}} class="form-control" placeholder="" aria-describedby="amount" min="10" , required/>
                     </div>
                     <div class="input-group">
@@ -100,12 +106,11 @@
         </div>
         <div class="container">
             <div class="row">
-                <form role="form" class="col-md-offset-2 col-md-8" action="/deposit/add.action" enctype="multipart/form-data" method="post">
+                <form role="form" class="col-md-offset-2 col-md-8" action="/{{if .BuyIcc}}buyicc{{else}}deposit{{end}}/add.action" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="gbankId" value="{{.Amt.BankId}}">
                     <input type="hidden" name="currency" value="{{.Amt.Currency}}">
                     <input type="hidden" name="amount" value="{{.Amt.Amount}}">
                     <input type="hidden" name="fees" value="{{.Amt.Fees}}">
-
                     <div class="input-group">
                         <span class="input-group-addon" id="name">用户姓名</span>
                         <input type="text" name="name" class="form-control" aria-describedby="name" required/>

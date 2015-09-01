@@ -45,21 +45,10 @@
    "Secret": "snwh9xAzpVoh9WxRc3pVENBJV44fj"
   }
  ],
- "ServerAddr": "wss://local.icloud.com:19528",
+ "ServerAddr": "wss://icloudcoin.org:19528",
+ "UsdRate": 1,
  "Timeout": 24,
  "Roles": [
-  {
-   "Id": 0,
-   "Username": "cc",
-   "Password": "passwordC",
-   "Type": 0
-  },
-  {
-   "Id": 0,
-   "Username": "gc",
-   "Password": "passwordG",
-   "Type": 0
-  },
   {
    "Id": 0,
    "Username": "ff",
